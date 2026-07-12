@@ -1,0 +1,32 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps } from 'nextra/components'
+
+# Installation & Usage
+
+There is little to no configuration with this resource. Ensure you have the following done:
+
+<Steps>
+
+### Enable OneSync Infinity
+
+### Set up your open functions within the configs
+
+### Set up your open events in the open files
+
+</Steps>
+
+## Using Renewed-Weathersync
+
+If you are using Renewed-Weathersync and would like to handle weather changes on clients while
+ensuring their weather is not overridden by the server weather, apply the changes in
+[this pull request](https://github.com/Renewed-Scripts/Renewed-Weathersync/pull/20/commits/82c877a0678512459b2a6c1452663b1286241013)
+to your Renewed-Weathersync. It adds a statebag that lets you set a custom weather type on the
+player when `syncWeather` is disabled, rather than defaulting to extra sunny.
+
+```lua filename="client.lua"
+LocalPlayer.state.syncWeather = false        -- Disable synced weather on player
+LocalPlayer.state.playerWeather = 'HALLOWEEN' -- Override weather on player
+```

@@ -1,0 +1,129 @@
+---
+title: "Installation & Usage"
+---
+
+import { Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+## Setup
+
+<Tabs items={['Certifications', 'Boss Menu', 'Raid Garages']}>
+<Tabs.Tab>
+
+* Add the following to your existing playerdata
+  * For qbx_core: `PlayerData` should be `playerData`
+
+```lua filename="qb-core/server/player.lua"
+    PlayerData.metadata['pdcerts'] = PlayerData.metadata['pdcerts'] or {
+        ['airone'] = false,             -- Air-1
+        ['mbu'] = false,                -- Motorbike Unit
+        ['fto'] = false,                -- Field Training Officer
+        ['hsu'] = false,                -- High Speed Unit
+        ['classthree'] = false,         -- Class 3
+        ['classtwo'] = false,           -- Class 2
+        ['alr'] = false,                -- Armalite Rifle
+        ['canine'] = false,             -- Canine
+        ['swat'] = false                -- SWAT
+    }
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Add the following function:
+
+```lua filename="qb-phone/server/employment.lua"
+local function JobsHandler(source, Job, CID, grade)
+    local src = source
+    local srcPlayer = QBCore.Functions.GetPlayer(src)
+
+    if not srcPlayer then return print("no source") end
+
+    local srcCID = srcPlayer.PlayerData.citizenid
+
+    if not Job or not CID or not CachedJobs[Job] then return end
+    local Player = QBCore.Functions.GetPlayerByCitizenId(CID)
+    if not CachedJobs[Job].employees[CID] then return notifyPlayer(src, "Citizen is not employed at the job...") end
+    if tonumber(grade) > tonumber(CachedJobs[Job].employees[srcCID].grade) then return notifyPlayer(src, "You cannot promote someone higher than you...") end
+
+    CachedJobs[Job].employees[CID].grade = tonumber(grade)
+
+    MySQL.update('UPDATE player_jobs SET employees = ? WHERE jobname = ?', { json.encode(CachedJobs[Job].employees), Job })
+
+    TriggerClientEvent("qb-phone:client:JobsHandler", -1, Job, CachedJobs[Job].employees)
+
+    if Player and CachedPlayers[CID] then
+        CachedPlayers[CID][Job] = CachedJobs[Job].employees[CID]
+
+        local newGrade = type(CachedJobs[Job].employees[CID].grade) ~= "number" and tonumber(CachedJobs[Job].employees[CID].grade) or CachedJobs[Job].employees[CID].grade
+        Player.Functions.SetJob(Job, newGrade)
+
+        TriggerClientEvent('qb-phone:client:MyJobsHandler', Player.PlayerData.source, Job, CachedPlayers[CID][Job], CachedJobs[Job].employees)
+    end
+end
+exports('JobsHandler', JobsHandler)
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Find the `PublicGarage` function in `qb-garages` and replace it with the following:
+
+```lua
+local function PublicGarage(garageName, type)
+    local garage = Config.Garages[garageName]
+    local categories = garage.vehicleCategories
+    local superCategory = GetSuperCategoryFromCategories(categories)
+    local isHidden = true
+    if PlayerJob.name == 'police' and type ~= 'depot' then isHidden = false end
+
+    exports['qb-menu']:openMenu({
+        {
+            header = garage.label,
+            isMenuHeader = true,
+        },
+        {
+            header = 'Raid Garage',
+            txt = 'Search for a citizen\'s vehicles',
+            icon = 'fas fa-magnifying-glass',
+            hidden = isHidden,
+            params = {
+                event = 'xt-pdextras:client:raidGarage',
+                args = {
+                    garage = garage,
+                    garageId = garageName,
+                    categories = categories,
+                    superCategory = superCategory,
+                    type = type,
+                }
+            }
+        },
+        {
+            header = Lang:t("menu.text.vehicles"),
+            txt = Lang:t("menu.text.vehicles"),
+            params = {
+                event = "qb-garages:client:GarageMenu",
+                args = {
+                    garageId = garageName,
+                    garage = garage,
+                    categories = categories,
+                    header =  Lang:t("menu.header."..garage.type.."_"..superCategory, {value = garage.label}),
+                    superCategory = superCategory,
+                    type = type
+                }
+            }
+        },
+        {
+            header = Lang:t("menu.leave.car"),
+            txt = "",
+            params = {
+                event = 'qb-menu:closeMenu'
+            }
+        },
+    })
+end
+```
+
+</Tabs.Tab>
+</Tabs>

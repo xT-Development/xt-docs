@@ -1,0 +1,71 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Copy the SQL string for your framework
+
+Open the provided SQL and find the framework you are using.
+
+### Add the SQL to your database
+
+### Add the cleaning supplies item to your inventory
+
+</Steps>
+
+## Usage
+
+### Entering & Exiting Prison
+
+When entering or exiting prison, trigger the following exports.
+
+```lua
+-- Entering
+exports['xt-prisonjobs']:InitPrisonJob()
+-- Creates a new location for your prison job, if you have one
+
+-- Exiting
+exports['xt-prisonjobs']:CleanupPrisonJob()
+-- Removes job related points, blips, etc
+```
+
+## Server Config Functions
+
+### Initialize Jail Time
+
+This function is only used if you're **not** using xt-prison. Its purpose is to return the playerdata that your prison resource uses. On load, it sets that metadata to the playerstate used in xt-prisonjobs. Reducing time is handled by the other functions below.
+
+This example assumes QBCore. The function is passed the `player` object by default.
+
+```lua filename="configs/server.lua"
+initJailTime = function(player)
+    return player.PlayerData.metadata.injail
+end,
+```
+
+### Reduce Time
+
+Triggered to reduce a player's jail time. You should trigger the events/functions that set a new jail time in your prison resource.
+
+```lua filename="configs/server.lua"
+reduceTime = function(source, setTime)
+    return exports['xt-prison']:SetJailTime(source, setTime)
+end,
+```
+
+### Check Out
+
+Triggered when a player presses the **Check Out** button in the menu. This should trigger the events/functions that release a player from prison.
+
+```lua filename="configs/server.lua"
+checkOut = function(source)
+    return lib.callback.await('xt-prison:client:exitJail', source, true)
+end
+```

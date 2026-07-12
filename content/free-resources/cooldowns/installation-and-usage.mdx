@@ -1,0 +1,35 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Install the provided SQL file
+
+`cooldowns.sql`
+
+### Set up the server config
+
+Found in `configs > server.lua`.
+
+</Steps>
+
+## Usage
+
+Callbacks are used to check whether a cooldown is active, and to enable a cooldown.
+
+The `cooldowns:isActive` callback checks if the **global** cooldown is active before checking the specific cooldown.
+
+```lua
+-- Check if cooldown is active
+local isActive = lib.callback.await('cooldowns:isActive', false, cooldownName)
+
+-- Enables cooldown
+local toggle = lib.callback.await('cooldowns:enable', false, cooldownName)
+```

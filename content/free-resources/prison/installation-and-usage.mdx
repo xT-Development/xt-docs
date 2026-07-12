@@ -1,0 +1,98 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Add the prison gates to ox_doorlock
+
+You'll need the names of the doors you set — the prison break config refers to them later.
+
+### Configure your config files
+
+They live in the `configs` folder.
+
+### Set up the doorlock names in the prison break config
+
+This is what makes a hacked terminal unlock the correct door.
+
+</Steps>
+
+## Commands
+
+| Command | What it does | Who can use it |
+| --- | --- | --- |
+| `/jail` | Send a player to jail | Toggleable command |
+| `/jailtime` | Check your own jail time | Anyone in prison |
+| `/prisoners` | View the prison roster | Police officers |
+
+## Usage
+
+### Check if Player is Lifer
+
+Check if a player is a lifer by using their `source`.
+
+```lua
+exports['xt-prison']:isLifer(source)
+```
+
+### Set Player Jail Time
+
+These are not used to send a player to jail, but to modify their jail time while they are already in jail.
+
+<Tabs items={['Client', 'Server']}>
+<Tabs.Tab>
+
+```lua
+local newTime = 100
+local setTime = lib.callback.await('xt-prison:server:setJailStatus', false, newTime)
+if setTime then
+    print('jail time set')
+end
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```lua
+local newTime = 100
+local setTime = exports['xt-prison']:SetJailTime(newTime)
+if setTime then
+    print('jail time set')
+end
+```
+
+</Tabs.Tab>
+</Tabs>
+
+### Send Player to Jail
+
+To properly send a player to jail, use the following callback. Pass the target player's source and the intended jailing time.
+
+```lua filename="server.lua"
+local sent = lib.callback.await('xt-prison:client:enterJail', targetSource, setTime)
+if sent then
+    lib.notify(source, {
+        title = 'Sent Player to Jail'
+    })
+end
+```
+
+### Unjail Player
+
+To properly unjail a player, use the following callback. `isUnjailed` is passed as a `boolean` to release the player and ignore their existing jail time — usually `true`.
+
+```lua filename="server.lua"
+local unjailed = lib.callback.await('xt-prison:client:exitJail', isUnjailed)
+if unjailed then
+    lib.notify(source, {
+        title = 'Unjailed Player'
+    })
+end
+```

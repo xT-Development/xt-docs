@@ -1,0 +1,109 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Run the SQL on your database
+
+### Add the job to your core shared jobs
+
+Optional — only if you want storages to be job-owned.
+
+### Edit the server functions
+
+They live in `sv_edit.lua`.
+
+### Edit the config
+
+</Steps>
+
+## Offline Autodraft Fees SQL
+
+Pick the snippet for your framework and place it in `sv_edit.lua`.
+
+<Tabs items={['QB / QBX', 'ND_Core', 'ESX']}>
+<Tabs.Tab>
+
+```lua filename="sv_edit.lua"
+MySQL.scalar('SELECT `money` FROM `players` WHERE `citizenid` = ? LIMIT 1', {
+    owner
+}, function(money)
+    local moneyInfo = json.decode(money)
+    local newBank = (moneyInfo.bank - payment)
+    local newInfo = {}
+    for moneyType, moneyAmount in pairs(moneyInfo) do
+        if moneyType ~= 'bank' then
+            newInfo[moneyType] = moneyAmount
+        else
+            newInfo['bank'] = newBank
+        end
+    end
+    newInfo = json.encode(newInfo)
+
+    MySQL.update('UPDATE `players` SET `money` = ? WHERE `citizenid` = ?', {
+        newInfo, owner
+    }, function(affectedRows)
+        print(('Storage Fees Due: %s | Offline Owner: %s | Paid: %s | Old Balance: $%s | New Balance: $%s'):format(lockerID, owner, payment, moneyInfo.bank, newBank))
+
+        MySQL.update.await('UPDATE `storagelockers` SET `lastpayment` = ?, `nextpayment` = ? WHERE `id` = ?', { currentDate, nextPayment, lockerID })
+    end)
+end)
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```lua filename="sv_edit.lua"
+MySQL.scalar('SELECT `bank` FROM `nd_characters` WHERE `charid` = ? LIMIT 1', {
+    owner
+}, function(bankAmount)
+    local newBank = (bankAmount - payment)
+
+    MySQL.update('UPDATE `nd_characters` SET `bank` = ? WHERE `charid` = ?', {
+        newBank, owner
+    }, function(affectedRows)
+        print(('Storage Fees Due: %s | Offline Owner: %s | Paid: %s | Old Balance: $%s | New Balance: $%s'):format(lockerID, owner, payment, bankAmount, newBank))
+
+        MySQL.update.await('UPDATE `storagelockers` SET `lastpayment` = ?, `nextpayment` = ? WHERE `id` = ?', { currentDate, nextPayment, lockerID })
+    end)
+end)
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```lua filename="sv_edit.lua"
+MySQL.scalar('SELECT `accounts` FROM `users` WHERE `identifer` = ? LIMIT 1', {
+    owner
+}, function(money)
+    local moneyInfo = json.decode(money)
+    local newBank = (moneyInfo.bank - payment)
+    local newInfo = {}
+    for moneyType, moneyAmount in pairs(moneyInfo) do
+        if moneyType ~= 'bank' then
+            newInfo[moneyType] = moneyAmount
+        else
+            newInfo['bank'] = newBank
+        end
+    end
+    newInfo = json.encode(newInfo)
+
+    MySQL.update('UPDATE `users` SET `accounts` = ? WHERE `identifer` = ?', {
+        newInfo, owner
+    }, function(affectedRows)
+        print(('Storage Fees Due: %s | Offline Owner: %s | Paid: %s | Old Balance: $%s | New Balance: $%s'):format(lockerID, owner, payment, moneyInfo.bank, newBank))
+
+        MySQL.update.await('UPDATE `storagelockers` SET `lastpayment` = ?, `nextpayment` = ? WHERE `id` = ?', { currentDate, nextPayment, lockerID })
+    end)
+end)
+```
+
+</Tabs.Tab>
+</Tabs>

@@ -1,0 +1,73 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Add the provided items and images to ox_inventory
+
+### Add the pet shop to your ox_inventory shops
+
+### Configure your config files
+
+</Steps>
+
+## Usage
+
+<Tabs items={['Client', 'Server']}>
+<Tabs.Tab>
+
+To get the data of your current pet, use the following export, or the player state.
+
+```lua filename="client.lua"
+local myPet = exports['xt-pets']:GetPet()
+
+local myPet = LocalPlayer.state.pet
+```
+
+Returns a table of data about the pet, or `nil`.
+
+| Field | Description |
+| --- | --- |
+| `id` | Pet entity id |
+| `model` | Pet entity model |
+| `name` | Pet name |
+| `waiting` | Pet waiting state |
+| `vehicle` | Entity of the vehicle the pet is in, or `false` |
+| `seat` | Seat index of the pet, or `false` |
+| `animation` | Pet's current animation |
+| `food` | Pet's food value |
+| `water` | Pet's water value |
+| `health` | Pet's health value |
+| `variation` | Pet's coat variation |
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+Get the data of every pet spawned on the server. Returns all pets, indexed by player source.
+
+```lua filename="server.lua"
+local allPets = exports['xt-pets']:GetAllPets()
+```
+
+Get an individual player's pet by passing their source. Returns the pet data, or `nil`.
+
+```lua filename="server.lua"
+local playerPet = exports['xt-pets']:GetPet(source)
+```
+
+| Field | Description |
+| --- | --- |
+| `active` | Whether the pet is active |
+| `petName` | Name of the pet |
+| `petOwner` | Citizen id of the pet owner |
+| `itemName` | Item used to spawn the pet |
+
+</Tabs.Tab>
+</Tabs>

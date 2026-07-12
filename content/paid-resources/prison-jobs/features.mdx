@@ -1,0 +1,91 @@
+---
+title: "Features"
+---
+
+import { Tabs } from 'nextra/components'
+
+# Features
+
+### General Features
+
+* 4 preconfigured jobs with the ability to add your own jobs
+  * Clean the Canteen
+  * Sweep the Courtyard
+  * Electrician
+  * Clean Toilets
+* Includes searching prison beds with synced states across players
+* Includes workouts around the prison with the ability to integrate your own 3rd party skills system
+* Multiple configurable functions to integrate 3rd party resources and your own prison resource
+* Use any minigame for skillchecks to perform jobs. Use different minigames for different jobs as well.
+* Includes full drop-in support for xt-prison
+
+### Crafting Features
+
+* Set multiple crafting locations, location is randomly selected on each resource start
+* Set craftable items and required items to craft
+* Each item has required reputation to craft and adds reputation when crafted
+
+### Trading Features
+
+* Set multiple locations for the trader, location is randomly selected on each resource restart
+* Set tradable items and required items currency to trade
+* On resource start, random prison currency is selected and required for trades
+* Each item has require reputation to trade and adds reputation when traded
+
+### Configurations
+
+<Tabs items={['Jobs Config', 'Trading Config', 'Crafting Config', 'Workout Config']}>
+<Tabs.Tab>
+
+* Set job title, description, and icon for the job menu
+* Set emote for each job when doing work
+* Set random chance to get items when doing work (Out of 100%)
+* Set random chance to reduce time (Out of 100%)
+* Set multiple items and amounts that can be found
+* Set multiple job locations for each job location (Using ox_lib points)
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Set multiple currencies, randomly selected at the start of the resource and used for the trader until the resource restarts again. Randomized currency
+* Trading Ped Configuration (Model, Coords, Scenario)
+* Length to trade items (set in seconds)
+* Trade Items Config (Items, required rep, rep added, and required trading currency)
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Random crafting location chosen with every resource start
+* Set required items and item amounts for each item
+* Set required reputation and the added reputation for each item
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Set workout cooldown length (Set in seconds)
+* Custom workout function to add your own skills exports (Workout type is passed as data to the function by default)
+* Set workout locations
+* Set length of workouts (Set in seconds)
+* Set emotes and workout types for each location
+
+</Tabs.Tab>
+</Tabs>
+
+### Toilets & Beds
+
+<Tabs items={['Cleaning Toilets', 'Searching Beds']}>
+<Tabs.Tab>
+
+* Each toilet has occupied and searched states that sync for all players using global states  (Prevent spam cleaning the same toilet)
+* Requires player to obtain cleaning supplies from the job ped
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+* Set emote to search beds
+* Each bed has occupied and searched states that sync for all players using global states (Prevent spam searching the same bed)
+* Set custom cooldown length for beds after searched (Set in minutes)
+* Set custom items and amounts found when searching beds
+
+</Tabs.Tab>
+</Tabs>

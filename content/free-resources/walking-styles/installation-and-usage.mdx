@@ -1,0 +1,22 @@
+---
+title: "Installation & Usage"
+---
+
+# Installation & Usage
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `/walks` | Open the walking styles menu |
+
+## Usage
+
+```lua filename="client.lua"
+-- Set walk style | style: clipset
+exports['xt-walkingstyles']:SetWalkStyle(style)
+
+-- Get walk style
+LocalPlayer.state.walkstyle
+exports['xt-walkingstyles']:GetWalkStyle()
+```
