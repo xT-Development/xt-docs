@@ -1,0 +1,211 @@
+---
+title: "Installation & Usage"
+---
+
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+<Callout type="warning">
+xt-weather owns the sky. Remove any other weather sync resource (Renewed-Weathersync,
+qb-weathersync, vSync) before starting it - both write the same state bags, and whichever
+writes last wins.
+</Callout>
+
+## Installation
+
+<Steps>
+
+### Drop the resource in
+
+Put `xt-weather` in your resources folder.
+
+### Ensure it after ox_lib
+
+```cfg filename="server.cfg"
+ensure ox_lib
+ensure xt-weather
+```
+
+### Give your admins permission
+
+The panel and the time commands are gated behind `group.admin` by default. Change the ACE group
+in `configs/server.lua`, or grant it in your `server.cfg`:
+
+```cfg filename="server.cfg"
+add_principal identifier.fivem:1 group.admin
+```
+
+### Pick your primary zone
+
+`primaryZone` in `configs/shared.lua` is the zone that answers zoneless weathersync calls from
+other resources. Set it to the zone most of your players stand in.
+
+</Steps>
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `/weather` | Opens the panel |
+| `/time <hour> [minute]` | Sets the time |
+| `/morning` `/noon` `/afternoon` `/midnight` | Time presets |
+| `/timescale <seconds>` | Real seconds per in-game minute. `0` returns to day/night scaling |
+| `/freezetime [true\|false]` | Stops the clock. No argument toggles |
+| `/blackout [true\|false]` | Cuts the city power. No argument toggles |
+
+All commands are restricted to `group.admin` by default. If another resource on your server
+already owns these names, set `registerTimeCommands = false` in `configs/server.lua`.
+
+## Configuration
+
+| File | What it holds |
+| --- | --- |
+| `configs/shared.lua` | Debug logging, the primary zone, the weather crossfade time |
+| `configs/server.lua` | Command names, permissions, the compatibility layer switch |
+| `configs/zones.lua` | The weather zones: label, starting weather, snow, forecast length |
+| `configs/zone_lookup.lua` | Maps GTA's own zone names (`AIRP`, `VINE`, …) onto those zones |
+| `configs/weather.lua` | Valid weather types, and the weighted table that drives the forecast |
+| `configs/time.lua` | Start time, day/night scale, what counts as night |
+
+<Callout type="info">
+Every config file and locale is outside the escrow. You can read and edit all of them.
+</Callout>
+
+## Zones
+
+A zone is a slice of the map with its own weather and its own forecast. Each one is indexed by a
+unique id.
+
+```lua filename="configs/zones.lua"
+ZonesConfig = {
+    northern_mountains = {
+        label = 'Northern Mountains',       -- shown in the weather panel
+        startingWeather = 'OVERCAST',       -- weather the zone opens on when the resource starts
+        canSnow = true,                     -- may this zone's forecast roll into the snow chain
+        snowChance = 30,                    -- chance (0-100) it does so on a wet roll
+        maxForecastEntries = 10,            -- how far ahead the forecast is built and shown
+        timeBetweenWeatherChanges = {       -- real minutes each forecast entry lasts
+            min = 15,
+            max = 60
+        }
+    },
+}
+```
+
+`configs/zone_lookup.lua` maps GTA's own zone names onto these ids. The full list of GTA zone
+names is in the [FiveM docs](https://docs.fivem.net/docs/game-references/zones/).
+
+```lua filename="configs/zone_lookup.lua"
+ZoneLookup = {
+    AIRP = 'south_ls',
+    ELYSIAN = 'south_ls',
+    DAVIS = 'south_ls',
+}
+```
+
+<Callout type="info">
+A GTA zone that is not listed belongs to no weather zone: a player standing in it keeps the
+weather of the last zone they were in, and the name is logged once so you can add it. Nothing
+breaks, but that patch of the map is not really being driven - so keep the list complete when you
+add or redraw zones.
+</Callout>
+
+## Forecasts
+
+Nothing in the forecast is a fixed sequence. A zone's next weather is rolled from the weather it
+is wearing now, weighted - so weather develops instead of teleporting. Edit a row and the whole
+forecast reshapes around it.
+
+```lua filename="configs/weather.lua"
+-- "When a zone is CLEAR, its next weather is EXTRASUNNY 35 times out of 100, CLOUDS 30, ..."
+-- Weights are relative, not percentages. They do not have to add up to 100.
+transitions = {
+    CLEAR    = { EXTRASUNNY = 35, CLOUDS = 30, CLEARING = 15, CLEAR = 20 },
+    CLOUDS   = { OVERCAST = 35, CLEARING = 25, CLEAR = 20, CLOUDS = 20 },
+    OVERCAST = { RAIN = 35, THUNDER = 20, CLOUDS = 25, CLEARING = 20 },
+    RAIN     = { THUNDER = 30, CLEARING = 40, OVERCAST = 30 },
+},
+```
+
+A weather that maps to itself (`CLEAR = 20` inside `CLEAR`) is how a spell of good weather holds
+instead of churning every hour.
+
+<Callout type="info">
+`validWeathers` is what can be **set**. `transitions` is what can be **rolled**. `HALLOWEEN` is
+valid but absent from the transitions, so an event resource can force it and nothing else will
+ever put it in the sky by accident.
+</Callout>
+
+## Snow
+
+Snow is entered, not rolled into. A zone with `canSnow` that rolls its way to `OVERCAST` or
+`RAIN` gets `snowChance` to drop into `SNOWLIGHT` instead - from there the cold chain takes over,
+and `CLEARING` is the way back out.
+
+```lua filename="configs/weather.lua"
+snowTransitions = {
+    SNOWLIGHT = { SNOW = 35, SNOWLIGHT = 30, CLEARING = 35 },
+    SNOW      = { BLIZZARD = 20, SNOWLIGHT = 50, SNOW = 30 },
+    BLIZZARD  = { SNOW = 60, SNOWLIGHT = 40 },
+},
+
+-- The wet weathers a canSnow zone can turn into snow instead.
+snowEntryWeathers = {
+    OVERCAST = true,
+    RAIN = true,
+},
+
+-- Rolled when a canSnow zone lands on a snowEntryWeather. Per-zone override: `snowChance`.
+defaultSnowChance = 10,
+```
+
+A snow weather lays snow on the ground, not just in the sky - snow pass, footstep tracks, vehicle
+trails, ice footstep audio, choppier water, and the frozen Alamo IPL if you stream it.
+
+`canSnow` is geographic by default: the mountains and Paleto get snow, Los Santos and its beaches
+do not. Set every zone to `canSnow = true` if you want a chance of snow across the whole map, or
+force it for an event with the panel or the `setWeather` export.
+
+## Time
+
+The clock is server-authoritative and scales separately for day and night.
+
+```lua filename="configs/time.lua"
+TimeConfig = {
+    -- Real seconds per in-game minute. 4 gives a 96-minute day.
+    -- Lower is faster, higher is slower.
+    timeScale = 4,
+    nightTimeScale = 10,   -- night runs at its own speed; 10 makes for long nights
+
+    startTime = { hour = 12, minute = 0 },
+    freezeOnStart = false,
+
+    -- Wraps past midnight: 22 to 6 means 22:00-05:59 is night, and 06:00 is morning.
+    nightTime = { startNight = 22, endNight = 6 }
+}
+```
+
+## Weathersync Compatibility
+
+Third-party resources do not know xt-weather has zones. They know the shape every weathersync
+since vSync has had: a zoneless `getWeatherState()`, a `getTime()`, a blackout toggle, and
+`GlobalState.weather` to read.
+
+xt-weather publishes that shape alongside its own zone-native API, so a resource written against
+Renewed-Weathersync or qb-weathersync works unchanged. A zoneless *get* has no player to resolve a
+zone from, so it is answered with `primaryZone`.
+
+```lua filename="configs/shared.lua"
+-- The zone that answers the zoneless weathersync exports.
+-- Must be a key in configs/zones.lua. Pick the one most of your players are standing in.
+primaryZone = 'central_ls',
+```
+
+```lua filename="configs/server.lua"
+-- Turn this off ONLY if you actually run another weathersync alongside xt-weather.
+registerCompatExports = true,
+```
+
+See [Exports & Events](/paid-resources/weather/exports-and-events) for everything the layer
+publishes.
