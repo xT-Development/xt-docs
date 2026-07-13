@@ -20,15 +20,15 @@ There is no SQL file to run. The `xt_obd_reports` table is auto-initialized on r
 
 ### Edit the server functions
 
-They live in `configs/server.lua` — character info, job checks, management permissions, and the owned-vehicle lookup.
+They live in `configs/server.lua` - character info, job checks, management permissions, and the owned-vehicle lookup.
 
 ### Edit the client functions
 
-They live in `configs/client.lua` — vehicle identifier, fuel getter, and the tablet emote.
+They live in `configs/client.lua` - vehicle identifier, fuel getter, and the tablet emote.
 
 ### Add the item to ox_inventory
 
-Optional — only if you want the scanner to be a physical item.
+Optional - only if you want the scanner to be a physical item.
 
 </Steps>
 
@@ -109,7 +109,7 @@ end,
 
 ## Trouble Codes
 
-Codes activate when their category's reading drops to or below the threshold. Add your own in `configs/shared.lua`, and add a matching `codes.*` entry to `locales/en.json` — a literal string works too.
+Codes activate when their category's reading drops to or below the threshold. Add your own in `configs/shared.lua`, and add a matching `codes.*` entry to `locales/en.json` - a literal string works too.
 
 ```lua filename="configs/shared.lua"
 codes = {

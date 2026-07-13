@@ -12,7 +12,7 @@ import { Steps, Tabs } from 'nextra/components'
 
 ### Add the prison gates to ox_doorlock
 
-You'll need the names of the doors you set — the prison break config refers to them later.
+You'll need the names of the doors you set - the prison break config refers to them later.
 
 ### Configure your config files
 
@@ -86,7 +86,7 @@ end
 
 ### Unjail Player
 
-To properly unjail a player, use the following callback. `isUnjailed` is passed as a `boolean` to release the player and ignore their existing jail time — usually `true`.
+To properly unjail a player, use the following callback. `isUnjailed` is passed as a `boolean` to release the player and ignore their existing jail time - usually `true`.
 
 ```lua filename="server.lua"
 local unjailed = lib.callback.await('xt-prison:client:exitJail', isUnjailed)

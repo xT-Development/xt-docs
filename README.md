@@ -33,7 +33,7 @@ content/
 ```
 
 Each resource folder has an `index.mdx` (marked `asIndexPage: true`) plus
-`features.mdx`, `dependencies.mdx`, and — where applicable — `installation-and-usage.mdx`.
+`features.mdx`, `dependencies.mdx`, and - where applicable - `installation-and-usage.mdx`.
 
 Navigation and ordering are controlled by the `_meta.ts` file in each folder. The four
 top-level entries in `content/_meta.ts` use `type: 'page'`, which renders them as tabs in
@@ -46,7 +46,7 @@ Site chrome (logo, navbar, footer, links) lives in `app/layout.tsx`.
 `zod` is pinned to `4.1.12` via a `pnpm.overrides` entry in `package.json`. Nextra 4.6.1
 declares `zod@^4.1.12`, but zod `>= 4.2` changed `z.custom()` so that it no longer accepts
 `undefined`. That breaks `nextra-theme-docs`, whose `<Layout>` validates its props after
-destructuring `children` out of them — every page then fails to prerender with
+destructuring `children` out of them - every page then fails to prerender with
 `Invalid input: expected nonoptional, received undefined → at children`. Remove the
 override once Nextra ships a fix.
 

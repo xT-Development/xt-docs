@@ -1,0 +1,216 @@
+---
+title: "Exports & Events"
+---
+
+import { Callout, Tabs } from 'nextra/components'
+
+# Exports & Events
+
+## Server Exports
+
+The zone-native API. `zoneId` is optional on the getters and setters - leaving it out means "the
+weather", which on a map cut into zones means the primary zone when reading and every zone when
+writing.
+
+```lua
+-- Read the weather of a zone. nil zoneId answers with the primary zone.
+--- @param zoneId string?
+--- @return string? weather
+local weather = exports['xt-weather']:getWeather('paleto')
+
+-- Force a zone's weather. nil zoneId sets EVERY zone.
+--- @param weather string
+--- @param zoneId string?
+--- @param opts? { length?: number, lock?: boolean }
+--- @return boolean
+exports['xt-weather']:setWeather('THUNDER', 'paleto', { length = 30, lock = true })
+
+-- The upcoming forecast for a zone: an array of { weather, length }.
+-- Entry 1 is the weather the zone is wearing right now. `length` is in real minutes.
+--- @param zoneId string
+--- @return table?
+local forecast = exports['xt-weather']:getForecast('paleto')
+
+-- Hold a zone on the weather it is wearing, or let its forecast run again.
+--- @param zoneId string
+--- @param locked boolean
+--- @return boolean
+exports['xt-weather']:setZoneLocked('paleto', true)
+
+--- @param zoneId string
+--- @return boolean
+local locked = exports['xt-weather']:isZoneLocked('paleto')
+
+-- Every zone this resource is driving.
+--- @return table<string, { label: string, canSnow: boolean }>
+local zones = exports['xt-weather']:getZones()
+
+-- Every weather type that can be set.
+--- @return table<string, boolean>
+local weathers = exports['xt-weather']:getValidWeathers()
+```
+
+### Per-Player
+
+Where a specific player is, and what the sky is doing there - the exact answer the zoneless
+getters can only guess at.
+
+<Callout type="warning">
+The server has no zone of its own, so these ask the player's client. **They yield, and must be
+called from inside a thread.**
+</Callout>
+
+```lua
+CreateThread(function()
+    --- @param playerId number
+    --- @return string? zoneId
+    local zone = exports['xt-weather']:getPlayerZone(source)
+
+    --- @param playerId number
+    --- @return string? weather
+    local weather = exports['xt-weather']:getPlayerWeather(source)
+end)
+```
+
+### Locking
+
+An event resource that forces a sky and walks away gets that sky rolled off it by the forecast
+within the hour. Locking is how a forced weather stays forced.
+
+```lua
+-- Force a HALLOWEEN sky over the whole map and hold it there.
+exports['xt-weather']:setWeather('HALLOWEEN', nil, { lock = true })
+
+-- ... event over. Hand every zone back to its forecast.
+for zoneId in pairs(exports['xt-weather']:getZones()) do
+    exports['xt-weather']:setZoneLocked(zoneId, false)
+end
+```
+
+## Client Exports
+
+```lua
+-- The weather this client currently has applied.
+--- @return string?
+local weather = exports['xt-weather']:getWeather()
+
+-- The zone this client is standing in.
+--- @return string?
+local zone = exports['xt-weather']:getCurrentZone()
+
+-- The weather of any zone, whether or not the player is in it.
+--- @param zoneId string
+--- @return string?
+local weather = exports['xt-weather']:getZoneWeather('paleto')
+```
+
+## State Bags
+
+Everything the resource publishes. Weather is per zone; time is not.
+
+| State bag | Type | What it holds |
+| --- | --- | --- |
+| `GlobalState['weather_<zoneId>']` | `string` | That zone's current weather, e.g. `weather_paleto` |
+| `GlobalState.time` | `{ hour, minute }` | The world clock |
+| `GlobalState.timeScale` | `number` | Milliseconds per in-game minute |
+| `GlobalState.timeFrozen` | `boolean` | Is the clock stopped |
+| `GlobalState.isNight` | `boolean` | Is it currently night (see `nightTime` in the config) |
+| `GlobalState.blackout` | `boolean` | Is the city's power cut |
+
+```lua
+local paletoWeather = GlobalState['weather_paleto']
+local time = GlobalState.time -- { hour = 12, minute = 30 }
+
+if GlobalState.isNight and not GlobalState.blackout then
+    -- ...
+end
+```
+
+### Taking the Sky
+
+Another resource can claim the sky by setting the `syncWeather` player state bag to `false` - a
+round-based minigame, a cutscene, an event that wants a fixed horizon. While sync is off,
+xt-weather applies nothing, so it will not undo what you just set.
+
+This is the Renewed-Weathersync contract, so resources that already speak it work unchanged.
+
+```lua
+-- Server-side. Take the sky from xt-weather for this player.
+Player(source).state:set('syncWeather', false, true)
+
+SetWeatherTypeNowPersist('XMAS') -- your resource now owns the weather on this client
+
+-- Hand it back. The player is resynced to their zone's real weather immediately.
+Player(source).state:set('syncWeather', true, true)
+```
+
+## Server Events
+
+```lua
+--- @param zoneId string
+--- @param weather string
+AddEventHandler('xt-weather:server:zoneWeatherChanged', function(zoneId, weather)
+    print(('%s is now %s'):format(zoneId, weather))
+end)
+
+--- @param hour number
+--- @param minute number
+AddEventHandler('xt-weather:server:timeChanged', function(hour, minute)
+    -- Fires on every in-game minute.
+end)
+```
+
+## Weathersync Compatibility
+
+When `registerCompatExports` is on (the default), xt-weather also publishes the zoneless API every
+weathersync since vSync has had, so third-party resources work without modification. Zoneless
+reads are answered with `primaryZone` from `configs/shared.lua`.
+
+<Callout type="info">
+`setWeather` and `getWeather` are deliberately absent from this list - those are xt-weather's own
+exports above, and a zone-aware `setWeather` is a superset of the zoneless one. Calling
+`exports['xt-weather']:setWeather('RAIN')` with no zone sets every zone, which is what a zoneless
+caller means.
+</Callout>
+
+### Exports
+
+```lua
+--- @return string? weather of the primary zone
+exports['xt-weather']:getWeatherState()
+
+--- @return number hour, number minute
+exports['xt-weather']:getTime()
+exports['xt-weather']:setTime(14, 30)
+
+exports['xt-weather']:getBlackoutState()
+exports['xt-weather']:setBlackout(true)
+
+exports['xt-weather']:getTimeFreezeState()
+exports['xt-weather']:setTimeFreeze(true)
+
+-- Dynamic weather is per zone here: the setter locks or unlocks EVERY zone at once,
+-- and the getter reports whether any zone is still running its forecast.
+exports['xt-weather']:getDynamicWeather()
+exports['xt-weather']:setDynamicWeather(false)
+
+-- Advance every zone to the next weather in its forecast, now.
+exports['xt-weather']:nextWeatherStage()
+```
+
+The client also exposes `getWeatherState()`, which returns the weather of the zone the player is
+standing in - the only answer that means anything on that player's machine.
+
+### Mirrored State Bags
+
+| State bag | Shape | Notes |
+| --- | --- | --- |
+| `GlobalState.weather` | `{ weather = 'RAIN', time = <ms left> }` | Renewed-Weathersync's shape. Mirrors the primary zone |
+| `GlobalState.currentTime` | `{ hour, minute }` | Same value as `GlobalState.time` |
+| `GlobalState.blackOut` | `boolean` | Renewed's spelling of `blackout` |
+| `GlobalState.freezeTime` | `boolean` | Renewed's spelling of `timeFrozen` |
+
+```lua
+-- A resource written against Renewed-Weathersync reads this and just works.
+local weather = GlobalState.weather?.weather
+```

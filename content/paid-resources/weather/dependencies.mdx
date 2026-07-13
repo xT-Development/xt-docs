@@ -1,0 +1,30 @@
+---
+title: "Dependencies"
+---
+
+import { Callout } from 'nextra/components'
+
+# Dependencies
+
+| Dependency | Required |
+| --- | --- |
+| [ox_lib](https://github.com/CommunityOx/ox_lib/releases) | Required |
+
+xt-weather is standalone. It does not need a framework, a database, or an inventory - admin
+access is handled with ACE permissions (`group.admin` by default), so it runs on QB, QBX, ESX,
+ND, OX, or no framework at all.
+
+## Optional
+
+| Resource | What it adds |
+| --- | --- |
+| `nve_iced_alamo` | Freezes the Alamo Sea while snow is on the ground. The IPL is loaded automatically if the resource is on your server, and skipped silently if it is not. |
+
+## Conflicts
+
+<Callout type="warning">
+**Do not run xt-weather alongside another weather sync resource.** Renewed-Weathersync,
+qb-weathersync and vSync write the same state bags, and whichever writes last owns the sky.
+Remove the other resource, or disable the compatibility layer in `configs/server.lua`
+(`registerCompatExports = false`).
+</Callout>

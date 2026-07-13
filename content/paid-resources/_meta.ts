@@ -10,5 +10,6 @@ export default {
   'slasher-minigame': "Slasher Minigame",
   'slash-tires': "Slash Tires",
   'storage': "Storage",
+  'weather': "Weather",
   'zombies': "Zombies"
 }

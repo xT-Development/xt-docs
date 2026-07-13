@@ -1,0 +1,66 @@
+---
+title: "Features"
+---
+
+# Features
+
+### Zone-Based Weather
+
+* The map is cut into weather zones, each running its own weather independently
+* It can rain in Paleto, snow in the mountains and stay clear in Vinewood at the same time
+* A player driving north watches the sky change as they cross into the next zone
+* Ships with 11 zones out of the box - add, remove, or redraw them in the config
+* GTA's own zone names (`AIRP`, `VINE`, …) are mapped onto your zones in a lookup table
+
+### Rolling Forecast
+
+* Each zone builds a weighted forecast instead of picking a random sky every hour
+* The next weather is rolled from the current one, so weather develops rather than teleports
+* Forecast length, and how long each entry lasts, is configured per zone
+* Edit any weighting to reshape the whole forecast - nothing is a hardcoded sequence
+* Zones can be **locked**, holding a forced weather so the forecast cannot roll it away
+
+### Snow That Lays
+
+* Snow is a ground state, not just a sky: snow pass, footstep tracks and vehicle trails
+* Ice and snow footstep audio banks, plus rougher water during a storm
+* Loads the frozen Alamo Sea IPL automatically if your server streams it
+* Snow is entered through the forecast, not rolled at random - a cold zone drifts into it
+* `canSnow` is per zone, so snow can stay geographic (mountains, Paleto) or cover the map
+
+### World Time
+
+* Server-authoritative clock with configurable real-seconds-per-in-game-minute
+* Separate day and night scaling, so nights can run longer or shorter than days
+* Freeze the clock, pin the speed by hand, or hand it back to automatic scaling
+* Blackout toggle that cuts the city's power without killing every headlight
+* Publishes an `isNight` flag other resources can read
+
+### Admin Panel
+
+* NUI panel showing live weather and the current forecast for every zone
+* Force a weather, skip to the next entry, regenerate a forecast, or lock a zone
+* Editable forecast timeline - rewrite any upcoming entry's weather and length
+* World controls for time, time scale, freeze and blackout in the same panel
+* Permission-gated server-side, not just hidden in the UI
+
+### Developer API
+
+* Exports for reading and driving weather per zone, per player, or map-wide
+* State bags for every zone's weather, the clock, night, freeze and blackout
+* Server events fired on weather and time changes
+* Other resources can take the sky (cutscenes, minigames, events) and hand it back
+
+### Weathersync Compatibility
+
+* Drop-in compatibility layer for resources written against a standard zoneless weathersync
+* `getWeatherState()`, `setWeather()`, `getTime()`, `setBlackout()` and friends all work unchanged
+* Publishes `GlobalState.weather`, `.currentTime`, `.blackOut` and `.freezeTime` in the expected shape
+* Zoneless calls are answered from a configurable primary zone
+* Turn the whole layer off with one switch
+
+### Other
+
+* Standalone - no framework required, works on any server
+* Fully localized through ox_lib locales
+* Configs and locales are outside the escrow, so everything you need to edit is open
