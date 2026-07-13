@@ -1,0 +1,46 @@
+---
+title: "Features"
+---
+
+# Features
+
+### Diagnostics
+
+* Connect a handheld scanner to the nearest vehicle
+* Live readings for engine, engine temperature, body, oil level, fuel level, and fuel tank health
+* Per-tire and per-window condition, named by index
+* Health tiers (Excellent → Critical) with configurable thresholds
+* Engine temperature tiers (Normal → Overheating) with configurable cutoffs
+
+### Trouble Codes
+
+* Active OBD codes derived from the live scan
+* `P0300` (engine misfire) and `P0455` (fuel system leak) included out of the box
+* Add your own codes with a category and a threshold percent
+
+### Repair Estimates
+
+* Cost estimate for engine and body damage, shown alongside the scan
+* Per-part flat fee plus a rate per 1% of missing health
+* Configurable currency symbol, or turn the estimate off entirely
+
+### Vehicle Reports
+
+* Mechanics write persistent service reports against a vehicle
+* Each report stores a title, a body, and a snapshot of the scan it was written from
+* Reports are keyed to the vehicle plate by default, or a VIN/custom identifier
+* Authors can always edit and delete their own reports; management can manage any report
+* Reports for unowned/AI vehicles stay in memory and never bloat the database
+* Database table is auto-created on start — no SQL file to run
+
+### Access Control
+
+* Job-gated access via `allowedJobs`
+* Optional ox_inventory item requirement, a usable item, or both
+* Item can be combined with the job gate as `and`, `or`, or item-only
+* Both the command and the usable item are validated server-side
+
+### Other
+
+* Fully localized through ox_lib locales
+* Framework-agnostic config seams for identifiers, jobs, permissions, and vehicle ownership

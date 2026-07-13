@@ -3,6 +3,7 @@ export default {
   'crafting': "Crafting",
   'cryptomining': "Cryptomining",
   'gravedigging': "Gravedigging",
+  'obd': "OBD Scanner",
   'pets': "Pets",
   'prison-jobs': "Prison Jobs",
   'purge': "Purge",

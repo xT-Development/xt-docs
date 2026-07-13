@@ -1,0 +1,189 @@
+---
+title: "Installation & Usage"
+---
+
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+<Callout type="info">
+There is no SQL file to run. The `xt_obd_reports` table is auto-initialized on resource start.
+</Callout>
+
+## Installation
+
+<Steps>
+
+### Configure your jobs
+
+`allowedJobs` in `configs/shared.lua` controls who can use the scanner.
+
+### Edit the server functions
+
+They live in `configs/server.lua` — character info, job checks, management permissions, and the owned-vehicle lookup.
+
+### Edit the client functions
+
+They live in `configs/client.lua` — vehicle identifier, fuel getter, and the tablet emote.
+
+### Add the item to ox_inventory
+
+Optional — only if you want the scanner to be a physical item.
+
+</Steps>
+
+## Usage
+
+Run the command in-game to open the scanner:
+
+```txt
+/obd
+```
+
+## Framework Functions
+
+The functions below are the only seams you need to touch to run this on a different framework. Everything else is framework-agnostic.
+
+<Tabs items={['Server', 'Client']}>
+<Tabs.Tab>
+
+```lua filename="configs/server.lua"
+-- Character id and display name for the report author.
+getPlayerInfo = function(source)
+    return Renewed:getCharId(source), (Renewed:getCharName(source) or GetPlayerName(source))
+end,
+
+-- Whether the player has the given job/group.
+hasGroup = function(source, group)
+    return Renewed:hasGroup(source, group)
+end,
+
+-- Bosses/admins allowed to edit or delete ANY report.
+-- Authors can always manage their own.
+isManagement = function(source)
+    return IsPlayerAceAllowed(source, 'command')
+end,
+
+-- Whether the identifier belongs to a player-owned vehicle.
+-- Reports for owned vehicles are written to the database; reports for
+-- unowned (world/AI) vehicles are kept in memory only and discarded on restart.
+isVehicleOwned = function(identifier)
+    local owned = MySQL.scalar.await('SELECT 1 FROM `player_vehicles` WHERE `plate` = ? LIMIT 1', { identifier })
+    return owned ~= nil
+
+    -- ESX example:
+    -- local owned = MySQL.scalar.await('SELECT 1 FROM `owned_vehicles` WHERE `plate` = ? LIMIT 1', { identifier })
+    -- return owned ~= nil
+end,
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```lua filename="configs/client.lua"
+-- Unique identifier shown on the tablet and used as the report key.
+-- Defaults to the plate; return a VIN or custom value instead if your server uses one.
+-- Keep `identifierLabel` in configs/shared.lua in sync with whatever you return, and
+-- query the same key in `isVehicleOwned`.
+getVehicleIdentifier = function(vehicle)
+    return utils.getVehiclePlate(vehicle)
+end,
+
+getVehicleFuel = function(vehicle)
+    local state = Entity(vehicle).state
+
+    return state.fuel or GetVehicleFuelLevel(vehicle)
+end,
+
+playEmote = function()
+    exports.scully_emotemenu:playEmoteByCommand('tablet2')
+end,
+
+stopEmote = function()
+    exports.scully_emotemenu:cancelEmote()
+end,
+```
+
+</Tabs.Tab>
+</Tabs>
+
+## Trouble Codes
+
+Codes activate when their category's reading drops to or below the threshold. Add your own in `configs/shared.lua`, and add a matching `codes.*` entry to `locales/en.json` — a literal string works too.
+
+```lua filename="configs/shared.lua"
+codes = {
+    {
+        code = 'P0300',
+        label = 'codes.p0300',
+        category = 'engine',
+        threshold = 35, -- percent where code becomes active (value <= threshold)
+    },
+    {
+        code = 'P0455',
+        label = 'codes.p0455',
+        category = 'fuelTank',
+        threshold = 35,
+    },
+},
+```
+
+Valid categories are the keys of `categoryFields`: `engine`, `fuelTank`, `body`, `fuel`, and `oil`.
+
+## Repair Estimates
+
+Only the engine and body can be repaired, so estimates are based on those two health values. The cost per part is a flat `baseFee` (charged once if the part has any damage at all) plus `costPerPercent` for every 1% of missing health.
+
+```lua filename="configs/shared.lua"
+repairRates = {
+    enabled = true,   -- set false to hide the repair estimate entirely
+    currency = '$',   -- symbol prefixed to displayed costs
+
+    engine = {
+        baseFee = 250,        -- flat diagnostic/labour fee once any damage exists
+        costPerPercent = 18,  -- added per 1% of missing engine health
+    },
+
+    body = {
+        baseFee = 150,
+        costPerPercent = 12,
+    },
+},
+```
+
+## Scanner Item
+
+Access is job-only by default. You can optionally require an **ox_inventory** item to open the scanner, and/or let players open it by using the item straight from their inventory. Both paths are validated server-side and share the same access rules.
+
+```lua filename="configs/shared.lua"
+item = {
+    name = 'obd_scanner',   -- ox_inventory item name
+
+    enabled = false,        -- require this item in the player's inventory to use /obd
+    usable  = false,        -- let players open the scanner by USING the item from ox_inventory
+
+    -- How the item combines with the job gate (allowedJobs) when `enabled`:
+    --   'and'  = must have an allowed job AND the item   (default)
+    --   'or'   = an allowed job OR the item is enough
+    --   'item' = only the item matters; jobs are ignored
+    mode = 'and',
+
+    missingNotice = 'notify.need_scanner', -- locale key shown when the item is missing
+},
+```
+
+If you use either option, add the item to ox_inventory:
+
+```lua filename="ox_inventory/data/items.lua"
+['obd_scanner'] = {
+    label = 'OBD Scanner',
+    weight = 500,
+    stack = false,
+    consume = 0,                      -- reusable tool; do not consume on use
+    server = { export = 'xt-obd.useScanner' },
+},
+```
+
+<Callout type="info">
+The item-count check lives in `configs/server.lua` (`hasItem`). Swap the ox_inventory export there if you use a different inventory.
+</Callout>
