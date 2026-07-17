@@ -1,0 +1,153 @@
+---
+title: "Installation & Usage"
+---
+
+import { Steps, Callout, Tabs } from 'nextra/components'
+
+# Installation & Usage
+
+## Installation
+
+<Steps>
+
+### Install the dependencies
+
+Make sure `ox_lib`, `Renewed-Lib`, and one of `ox_target` / `qb-target` / `sleepless_interact` are already on your server and started before this resource.
+
+### Drop the resource in and ensure it
+
+Add `ensure xt-robnpcs` to your `server.cfg`, after your framework and the dependencies above.
+
+### Configure the resource
+
+Everything an owner should touch lives in the `configs` folder — see [Usage](#usage) below.
+
+</Steps>
+
+<Callout type="info">
+There is no SQL and no build step. It is plaintext Lua — edit the configs and restart.
+</Callout>
+
+## Usage
+
+The config is split three ways: `shared.lua` (values both sides read), `client.lua` (how the world behaves), and `server.lua` (payouts and the framework bridge).
+
+### Who can rob, and when
+
+Set in `configs/shared.lua`:
+
+```lua
+return {
+    requiredCops = 0,       -- Cops online before locals can be robbed (0 = no requirement)
+    blacklistedJobs = {     -- Jobs / gangs that can't rob locals
+        'police',
+        'ambulance'
+    },
+}
+```
+
+`requiredCops` and `blacklistedJobs` are both re-checked on the server, so they are real gates, not just UX.
+
+### How the hold up plays out
+
+Set in `configs/client.lua` — the weapons a player can hold peds up with, which peds are off limits, how far the interaction reaches, how long the rob takes, and the odds the ped surrenders, flees, or fights back.
+
+```lua
+targetDistance = 20.0,      -- Max distance a ped reacts to you aiming, and stays held up
+reactionTime = 1000,        -- Time (ms) before the ped reacts to you aiming
+robLength = 5,              -- How long (seconds) the rob takes once you start it
+
+allowedWeapons = {          -- Weapons a player can hold a ped up with
+    'WEAPON_KNIFE',
+    'WEAPON_PISTOL'
+},
+blockedPedTypes = {         -- Ped types that can not be robbed
+    6,                      -- Cop
+    20,                     -- Medic
+    21,                     -- Fireman
+    26,                     -- Mission
+    27,                     -- Swat
+    29                      -- Army
+},
+
+-- How the ped reacts when it's held up (see the note below on how these roll)
+chancePedFlees  = { min = 5, max = 25 },  -- Runs away instead of surrendering
+chancePedFights = { min = 5, max = 15 },  -- Attacks you before or after the rob
+
+-- Only matters if the ped decided to fight
+chancePedIsArmedWhileFighting = { min = 80, max = 90 },  -- Chance it pulls a weapon
+pedWeapons = {              -- Weapon pool a fighting ped draws from (one picked at random)
+    'WEAPON_KNIFE',
+    'WEAPON_BAT'
+},
+
+copsChance = { min = 80, max = 90 },  -- Chance the robbery calls the police (fires `dispatch`)
+```
+
+`blockedPedTypes` takes the IDs returned by [`GET_PED_TYPE`](https://docs.fivem.net/natives/?_0xFF059E1E4C01E63C) — that native's page lists every type. Only ambient peds are robbable to begin with (anything spawned by another script is skipped), so this is for carving out ambient types you want left alone.
+
+<Callout type="info">
+**How the `{ min, max }` chances work.** Each one is a percentage, but the threshold isn't fixed — every attempt the game picks a number between `min` and `max`, then rolls a `d100` against it. So the odds jitter inside the band instead of sitting on one value. To pin a chance to an exact percentage, set `min` and `max` to the same number.
+</Callout>
+
+The reaction is a single roll, checked in order: **fight** first, then **flee**, and whatever is left over is **surrender**. With the defaults above a ped fights ~5–15% of the time, flees ~5–25%, and surrenders the rest — so raising the fight or flee bands eats into the surrender chance. Only when the ped chooses to fight does `chancePedIsArmedWhileFighting` roll to decide whether it draws a weapon from `pedWeapons`.
+
+### Payouts, loot, and cooldowns
+
+Set in `configs/server.lua`:
+
+```lua
+payOut = { min = 10, max = 20 },           -- Cash payout range
+payOutChance = { min = 70, max = 80 },     -- Chance the ped has cash on them at all
+chanceItemsFound = { min = 80, max = 90 }, -- Chance the ped is carrying a lootable item
+lootableItems = {                          -- Items a ped might be carrying (one picked at random)
+    { item = 'rolex', min = 1, max = 2 },
+    { item = 'phone', min = 1, max = 2 }
+},
+robCooldown = 20,   -- Cooldown (seconds) between robberies, per player
+pedCooldown = 300,  -- How long (seconds) a robbed ped stays unrobbable
+robDistance = 5.0,  -- Max distance the player may be from the ped when the payout is claimed
+```
+
+`payOutChance` and `chanceItemsFound` are independent rolls — a robbery can drop cash, an item, both, or nothing. When `chanceItemsFound` succeeds, one entry from `lootableItems` is chosen at random and the player receives between its `min` and `max`. Both use the same `{ min, max }` jitter described [above](#how-the-hold-up-plays-out).
+
+### Interaction: target or sleepless_interact
+
+The resource works with `ox_target` or `qb-target` out of the box — it detects which one you run. To use [sleepless_interact](https://github.com/Sleepless-Development/sleepless_interact) instead, set `useSleeplessInteract = true` in `configs/client.lua`.
+
+### Bridge functions
+
+The functions below are the swap points — rewrite them for your server and the rest of the code doesn't change.
+
+<Tabs items={['Money & Items', 'Dispatch']}>
+<Tabs.Tab>
+
+`addCash` and `addItem` live in `configs/server.lua`. They default to `ox_inventory`; a commented QB/QBX/ESX example sits next to each. Return a truthy value on success — a failed `addItem` (full inventory) tells the player their pockets are full instead of silently losing the loot.
+
+```lua
+addCash = function(src, amount)
+    return exports.ox_inventory:AddItem(src, 'money', amount)
+end,
+
+addItem = function(src, item, amount)
+    return exports.ox_inventory:AddItem(src, item, amount)
+end,
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+`dispatch` lives in `configs/client.lua` and fires when a robbery is called in. It is empty by default — drop in your own dispatch resource's export. A `ps-dispatch` example is left commented in the file.
+
+```lua
+dispatch = function(coords)
+    -- exports['ps-dispatch']:CustomAlert({ ... })
+end
+```
+
+</Tabs.Tab>
+</Tabs>
+
+<Callout type="warning">
+Framework money should always be granted through the server. `addCash`, `addItem`, and the payout logic all run server-side — never move that decision to the client.
+</Callout>

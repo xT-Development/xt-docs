@@ -1,0 +1,17 @@
+---
+title: "Dependencies"
+---
+
+# Dependencies
+
+| Dependency | Required |
+| --- | --- |
+| [ox_lib](https://github.com/CommunityOx/ox_lib/releases) | Required |
+| [Renewed-Lib](https://github.com/Renewed-Scripts/Renewed-Lib) | Required |
+| [ox_target](https://github.com/CommunityOx/ox_target/releases) *or* [qb-target](https://github.com/qbcore-framework/qb-target) | Required (one) |
+| [sleepless_interact](https://github.com/Sleepless-Development/sleepless_interact) | Optional |
+| [ox_inventory](https://github.com/CommunityOx/ox_inventory/releases) | Default (swappable) |
+
+Renewed-Lib is the framework bridge — **the resource will not start without it**, regardless of which framework you run.
+
+`ox_inventory` is only the default for the `addCash` and `addItem` functions in `configs/server.lua`. Rewrite those two functions for your own inventory and it is no longer needed.

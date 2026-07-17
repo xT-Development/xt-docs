@@ -4,6 +4,7 @@ export default {
   'repairs': "Repairs",
   'duty-menu': "Duty Menu",
   'meter-robbery': "Meter Robbery",
+  'robnpcs': "Rob NPCs",
   'pd-extras': "PD Extras",
   'forgery': "Forgery",
   'cooldowns': "Cooldowns",

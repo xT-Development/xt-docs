@@ -1,0 +1,21 @@
+---
+title: "Features"
+---
+
+# Features
+
+* Aim an allowed weapon at an ambient NPC to hold them up
+* Smooth, blended surrender animation — the ped turns to face you, raises their hands, then eases down into a kneel
+* Random reaction on every hold up — the ped surrenders, flees, or fights back
+  * If the ped fights, a random chance they pull a weapon chosen from the config
+* Configurable chance each robbery calls the police, wired to your own dispatch resource
+* Rob the ped through ox_target, qb-target, or sleepless_interact
+* Server-authoritative payouts — the server re-checks the ped, distance, job, cop count, and cooldowns before it pays anyone
+* Per-player and per-ped cooldowns stop callback spam and double-robbing
+* A `robbed` statebag is set once a ped is robbed, flees, or fights, so it can't be robbed again
+* Required cop count, or zero
+* Configurable cash payout and item loot, each with its own chance
+* Blacklisted jobs that can't rob locals
+* Configurable blocked ped types — cops, medics, firemen, swat, and army are off limits by default
+* Multi-framework via [Renewed-Lib](https://github.com/Renewed-Scripts/Renewed-Lib) — QB, QBX, OX, ESX, ND
+* Open config functions for money, items, and police dispatch — use any inventory or dispatch resource
