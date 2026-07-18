@@ -1,0 +1,45 @@
+---
+title: "Installation & Usage"
+---
+
+# Installation & Usage
+
+## Setup
+
+* Add the taser cartridge item to `ox_inventory`:
+
+```lua filename="ox_inventory/data/items.lua"
+["ammo-taser"] = {
+    label = "Taser Cartridge",
+    weight = 100,
+    stack = true,
+    close = false
+},
+```
+
+* Copy `ammo-taser.png` from the resource into `ox_inventory/web/images`.
+
+## Usage
+
+* Equip the base game stun gun (`WEAPON_STUNGUN`) — the cartridge UI appears in the bottom right.
+* Each shot consumes one cartridge and is saved to the weapon's item metadata.
+* At zero cartridges the stun gun will not fire and a `[R] - Reload Taser Cartridges` prompt appears.
+* Press `R` to reload, consuming `ammo-taser` items from your inventory.
+
+## Configuration
+
+```lua filename="config.lua"
+return {
+    reloadLength = 2,                           -- time to reload
+
+    taserCartridgeItem = 'ammo-taser',          -- item name
+
+    maxCartridges = 5                           -- max cartridges
+}
+```
+
+| Option | Type | What it does |
+| --- | --- | --- |
+| `reloadLength` | `number` | Reload progress duration, in seconds |
+| `taserCartridgeItem` | `string` | Inventory item consumed when reloading |
+| `maxCartridges` | `number` | Cartridges a stun gun holds when full |

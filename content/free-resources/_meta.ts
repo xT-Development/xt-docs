@@ -6,6 +6,7 @@ export default {
   'meter-robbery': "Meter Robbery",
   'robnpcs': "Rob NPCs",
   'pd-extras': "PD Extras",
+  'taser': "Taser",
   'forgery': "Forgery",
   'cooldowns': "Cooldowns",
   'christmas': "Christmas"
