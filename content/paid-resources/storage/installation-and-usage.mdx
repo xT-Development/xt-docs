@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps, Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Installation
 
 <Steps>
@@ -29,9 +25,9 @@ They live in `sv_edit.lua`.
 Pick the snippet for your framework and place it in `sv_edit.lua`.
 
 <Tabs items={['QB / QBX', 'ND_Core', 'ESX']}>
-<Tabs.Tab>
+<Tab>
 
-```lua filename="sv_edit.lua"
+```lua title="sv_edit.lua"
 MySQL.scalar('SELECT `money` FROM `players` WHERE `citizenid` = ? LIMIT 1', {
     owner
 }, function(money)
@@ -57,10 +53,10 @@ MySQL.scalar('SELECT `money` FROM `players` WHERE `citizenid` = ? LIMIT 1', {
 end)
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
-```lua filename="sv_edit.lua"
+```lua title="sv_edit.lua"
 MySQL.scalar('SELECT `bank` FROM `nd_characters` WHERE `charid` = ? LIMIT 1', {
     owner
 }, function(bankAmount)
@@ -76,10 +72,10 @@ MySQL.scalar('SELECT `bank` FROM `nd_characters` WHERE `charid` = ? LIMIT 1', {
 end)
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
-```lua filename="sv_edit.lua"
+```lua title="sv_edit.lua"
 MySQL.scalar('SELECT `accounts` FROM `users` WHERE `identifer` = ? LIMIT 1', {
     owner
 }, function(money)
@@ -105,5 +101,5 @@ MySQL.scalar('SELECT `accounts` FROM `users` WHERE `identifer` = ? LIMIT 1', {
 end)
 ```
 
-</Tabs.Tab>
+</Tab>
 </Tabs>

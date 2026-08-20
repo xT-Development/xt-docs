@@ -1,0 +1,18 @@
+{
+  "title": "Free Resources",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "prison",
+    "walking-styles",
+    "repairs",
+    "duty-menu",
+    "meter-robbery",
+    "robnpcs",
+    "pd-extras",
+    "taser",
+    "forgery",
+    "cooldowns",
+    "christmas"
+  ]
+}

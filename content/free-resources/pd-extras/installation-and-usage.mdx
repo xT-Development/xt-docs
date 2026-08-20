@@ -2,19 +2,15 @@
 title: "Installation & Usage"
 ---
 
-import { Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Setup
 
 <Tabs items={['Certifications', 'Boss Menu', 'Raid Garages']}>
-<Tabs.Tab>
+<Tab>
 
 * Add the following to your existing playerdata
   * For qbx_core: `PlayerData` should be `playerData`
 
-```lua filename="qb-core/server/player.lua"
+```lua title="qb-core/server/player.lua"
     PlayerData.metadata['pdcerts'] = PlayerData.metadata['pdcerts'] or {
         ['airone'] = false,             -- Air-1
         ['mbu'] = false,                -- Motorbike Unit
@@ -28,12 +24,12 @@ import { Tabs } from 'nextra/components'
     }
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
 * Add the following function:
 
-```lua filename="qb-phone/server/employment.lua"
+```lua title="qb-phone/server/employment.lua"
 local function JobsHandler(source, Job, CID, grade)
     local src = source
     local srcPlayer = QBCore.Functions.GetPlayer(src)
@@ -65,8 +61,8 @@ end
 exports('JobsHandler', JobsHandler)
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
 * Find the `PublicGarage` function in `qb-garages` and replace it with the following:
 
@@ -125,5 +121,5 @@ local function PublicGarage(garageName, type)
 end
 ```
 
-</Tabs.Tab>
+</Tab>
 </Tabs>

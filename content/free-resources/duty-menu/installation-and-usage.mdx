@@ -2,36 +2,32 @@
 title: "Installation & Usage"
 ---
 
-import { Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Usage
 
 ### Check Duty State
 
 <Tabs items={['Client', 'Server']}>
-<Tabs.Tab>
+<Tab>
 
-```lua filename="client.lua"
+```lua title="client.lua"
 local duty = LocalPlayer.state.onDuty
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
-```lua filename="server.lua"
+```lua title="server.lua"
 local duty = Player(source).state.onDuty
 ```
 
-</Tabs.Tab>
+</Tab>
 </Tabs>
 
 ### Toggle & Set Duty
 
 Both exports are **client only**.
 
-```lua filename="client.lua"
+```lua title="client.lua"
 -- Toggle duty
 exports['xt-duty']:toggleDuty()
 

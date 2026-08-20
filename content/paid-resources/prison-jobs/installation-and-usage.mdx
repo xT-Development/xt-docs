@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps } from 'nextra/components'
-
-# Installation & Usage
-
 ## Installation
 
 <Steps>
@@ -44,7 +40,7 @@ This function is only used if you're **not** using xt-prison. Its purpose is to 
 
 This example assumes QBCore. The function is passed the `player` object by default.
 
-```lua filename="configs/server.lua"
+```lua title="configs/server.lua"
 initJailTime = function(player)
     return player.PlayerData.metadata.injail
 end,
@@ -54,7 +50,7 @@ end,
 
 Triggered to reduce a player's jail time. You should trigger the events/functions that set a new jail time in your prison resource.
 
-```lua filename="configs/server.lua"
+```lua title="configs/server.lua"
 reduceTime = function(source, setTime)
     return exports['xt-prison']:SetJailTime(source, setTime)
 end,
@@ -64,7 +60,7 @@ end,
 
 Triggered when a player presses the **Check Out** button in the menu. This should trigger the events/functions that release a player from prison.
 
-```lua filename="configs/server.lua"
+```lua title="configs/server.lua"
 checkOut = function(source)
     return lib.callback.await('xt-prison:client:exitJail', source, true)
 end

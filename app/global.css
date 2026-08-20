@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Brand accent #00ffcc. The @theme block is the light/default layer; Tailwind v4
+   cannot scope @theme to a selector, so the dark values go in a plain .dark block.
+   Light mode drops the lightness to 30% so active nav items stay legible on white -
+   this mirrors the old Nextra `lightness: { dark: 50, light: 30 }` setting. */
+@theme {
+  --color-fd-primary: hsl(168, 100%, 30%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-ring: hsl(168, 100%, 30%);
+}
+
+.dark {
+  --color-fd-primary: hsl(168, 100%, 50%);
+  /* must stay dark - button labels sit on top of #00ffcc */
+  --color-fd-primary-foreground: hsl(168, 100%, 8%);
+  --color-fd-ring: hsl(168, 100%, 50%);
+}
+
+/* Fumadocs tints only the underline of in-prose links by default. Nextra coloured
+   the link text itself, so carry that over. */
+.prose {
+  --tw-prose-links: var(--color-fd-primary);
+}
+
+html {
+  scrollbar-gutter: stable;
+}

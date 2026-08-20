@@ -2,13 +2,13 @@ import type { ReactNode } from 'react'
 
 type Tone = 'accent' | 'neutral' | 'warn'
 
-// Colours are derived from Nextra's primary scale, so badges follow the
+// Colours are derived from the Fumadocs theme tokens, so badges follow the
 // brand accent and stay legible in both light and dark themes.
 const TONES: Record<Tone, { fg: string; bg: string; border: string }> = {
   accent: {
-    fg: 'var(--x-color-primary-600)',
-    bg: 'color-mix(in srgb, var(--x-color-primary-500) 12%, transparent)',
-    border: 'color-mix(in srgb, var(--x-color-primary-500) 40%, transparent)'
+    fg: 'var(--color-fd-primary)',
+    bg: 'color-mix(in srgb, var(--color-fd-primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--color-fd-primary) 40%, transparent)'
   },
   neutral: {
     fg: 'currentColor',
@@ -16,7 +16,7 @@ const TONES: Record<Tone, { fg: string; bg: string; border: string }> = {
     border: 'color-mix(in srgb, currentColor 25%, transparent)'
   },
   warn: {
-    fg: 'var(--x-color-yellow-600, #b45309)',
+    fg: 'var(--color-fd-warning)',
     bg: 'color-mix(in srgb, #f59e0b 14%, transparent)',
     border: 'color-mix(in srgb, #f59e0b 45%, transparent)'
   }

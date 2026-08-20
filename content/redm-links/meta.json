@@ -1,0 +1,12 @@
+{
+  "title": "RedM Links",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "natives-discoveries-etc",
+    "maps",
+    "developer-tools",
+    "ped-models",
+    "blips"
+  ]
+}

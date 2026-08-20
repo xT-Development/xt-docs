@@ -1,0 +1,20 @@
+{
+  "title": "Paid Resources",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "blackmarkets",
+    "crafting",
+    "cryptomining",
+    "gravedigging",
+    "obd",
+    "pets",
+    "prison-jobs",
+    "purge",
+    "slasher-minigame",
+    "slash-tires",
+    "storage",
+    "weather",
+    "zombies"
+  ]
+}
