@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps } from 'nextra/components'
-
-# Installation & Usage
-
 There is little to no configuration with this resource. Ensure you have the following done:
 
 <Steps>
@@ -26,7 +22,7 @@ ensuring their weather is not overridden by the server weather, apply the change
 to your Renewed-Weathersync. It adds a statebag that lets you set a custom weather type on the
 player when `syncWeather` is disabled, rather than defaulting to extra sunny.
 
-```lua filename="client.lua"
+```lua title="client.lua"
 LocalPlayer.state.syncWeather = false        -- Disable synced weather on player
 LocalPlayer.state.playerWeather = 'HALLOWEEN' -- Override weather on player
 ```

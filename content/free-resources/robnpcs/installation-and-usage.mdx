@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps, Callout, Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Installation
 
 <Steps>
@@ -120,7 +116,7 @@ The resource works with `ox_target` or `qb-target` out of the box — it detects
 The functions below are the swap points — rewrite them for your server and the rest of the code doesn't change.
 
 <Tabs items={['Money & Items', 'Dispatch']}>
-<Tabs.Tab>
+<Tab>
 
 `addCash` and `addItem` live in `configs/server.lua`. They default to `ox_inventory`; a commented QB/QBX/ESX example sits next to each. Return a truthy value on success — a failed `addItem` (full inventory) tells the player their pockets are full instead of silently losing the loot.
 
@@ -134,8 +130,8 @@ addItem = function(src, item, amount)
 end,
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
 `dispatch` lives in `configs/client.lua` and fires when a robbery is called in. It is empty by default — drop in your own dispatch resource's export. A `ps-dispatch` example is left commented in the file.
 
@@ -145,7 +141,7 @@ dispatch = function(coords)
 end
 ```
 
-</Tabs.Tab>
+</Tab>
 </Tabs>
 
 <Callout type="warning">

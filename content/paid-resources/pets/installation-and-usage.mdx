@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps, Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Installation
 
 <Steps>
@@ -21,11 +17,11 @@ import { Steps, Tabs } from 'nextra/components'
 ## Usage
 
 <Tabs items={['Client', 'Server']}>
-<Tabs.Tab>
+<Tab>
 
 To get the data of your current pet, use the following export, or the player state.
 
-```lua filename="client.lua"
+```lua title="client.lua"
 local myPet = exports['xt-pets']:GetPet()
 
 local myPet = LocalPlayer.state.pet
@@ -47,18 +43,18 @@ Returns a table of data about the pet, or `nil`.
 | `health` | Pet's health value |
 | `variation` | Pet's coat variation |
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
 Get the data of every pet spawned on the server. Returns all pets, indexed by player source.
 
-```lua filename="server.lua"
+```lua title="server.lua"
 local allPets = exports['xt-pets']:GetAllPets()
 ```
 
 Get an individual player's pet by passing their source. Returns the pet data, or `nil`.
 
-```lua filename="server.lua"
+```lua title="server.lua"
 local playerPet = exports['xt-pets']:GetPet(source)
 ```
 
@@ -69,5 +65,5 @@ local playerPet = exports['xt-pets']:GetPet(source)
 | `petOwner` | Citizen id of the pet owner |
 | `itemName` | Item used to spawn the pet |
 
-</Tabs.Tab>
+</Tab>
 </Tabs>

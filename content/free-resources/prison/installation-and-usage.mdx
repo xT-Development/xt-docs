@@ -2,10 +2,6 @@
 title: "Installation & Usage"
 ---
 
-import { Steps, Tabs } from 'nextra/components'
-
-# Installation & Usage
-
 ## Installation
 
 <Steps>
@@ -47,7 +43,7 @@ exports['xt-prison']:isLifer(source)
 These are not used to send a player to jail, but to modify their jail time while they are already in jail.
 
 <Tabs items={['Client', 'Server']}>
-<Tabs.Tab>
+<Tab>
 
 ```lua
 local newTime = 100
@@ -57,8 +53,8 @@ if setTime then
 end
 ```
 
-</Tabs.Tab>
-<Tabs.Tab>
+</Tab>
+<Tab>
 
 ```lua
 local newTime = 100
@@ -68,14 +64,14 @@ if setTime then
 end
 ```
 
-</Tabs.Tab>
+</Tab>
 </Tabs>
 
 ### Send Player to Jail
 
 To properly send a player to jail, use the following callback. Pass the target player's source and the intended jailing time.
 
-```lua filename="server.lua"
+```lua title="server.lua"
 local sent = lib.callback.await('xt-prison:client:enterJail', targetSource, setTime)
 if sent then
     lib.notify(source, {
@@ -88,7 +84,7 @@ end
 
 To properly unjail a player, use the following callback. `isUnjailed` is passed as a `boolean` to release the player and ignore their existing jail time - usually `true`.
 
-```lua filename="server.lua"
+```lua title="server.lua"
 local unjailed = lib.callback.await('xt-prison:client:exitJail', isUnjailed)
 if unjailed then
     lib.notify(source, {
