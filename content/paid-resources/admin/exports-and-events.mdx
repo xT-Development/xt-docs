@@ -1,0 +1,164 @@
+---
+title: "Exports & Events"
+description: "The exports, events and database tables other resources can use."
+---
+
+Everything on this page is a supported surface for another resource on your server to use.
+
+## Moderation
+
+### banPlayer
+
+Ban a connected player from script. Files its own audit row, naming the resource that called
+it.
+
+```lua
+--- @param target number server id
+--- @param reason string
+--- @param duration string? '1h' '3h' '6h' '12h' '1d' '3d' '7d' '14d' '30d' 'permanent'
+---                          Defaults to 'permanent'
+--- @return table|false { banId = '...' } on success
+local result = exports['xt-admin']:banPlayer(source, 'Cheating', '7d')
+
+if result then
+    print('Filed as ' .. result.banId)
+end
+```
+
+The player is dropped by the call, so read anything you need off them first.
+
+### kickPlayer
+
+```lua
+--- @param target number server id
+--- @param reason string
+--- @return boolean
+exports['xt-admin']:kickPlayer(source, 'AFK for too long')
+```
+
+Also files its own audit row.
+
+## Logging
+
+### log
+
+The one to use. `event` alone is enough - the label resolves from `locales/en.json`, so adding
+a `logs.action.myThing` key gets you a translated row without touching Lua.
+
+```lua
+--- @param entry table
+--- @return boolean written
+exports['xt-admin']:log({
+    event  = 'myThing',        -- required. The action id
+    action = 'My Thing',       -- optional. Overrides the label from locales
+    detail = '**Amount:** 500',-- optional. Markdown
+    source = source,           -- optional. The staff member's server id
+    target = targetId,         -- optional. The target's server id
+    icon   = 'zap',            -- optional
+})
+```
+
+`resource` is stamped from the invocation, not from your payload - a log can never claim to
+have come from a resource that did not send it.
+
+### addLog
+
+A flatter form, kept for convenience.
+
+```lua
+--- @param src number|nil staff server id
+--- @param action string
+--- @param detail string|nil
+--- @param icon string|nil
+--- @param target number|nil target server id
+--- @return boolean
+exports['xt-admin']:addLog(source, 'Sold a car', '**Plate:** ABC123', 'car', buyerId)
+```
+
+### getLogs
+
+Read the audit trail back.
+
+```lua
+--- @param query string|nil matched against staff name, action and target
+--- @param limit number|nil  default 50, clamped to 1-200
+--- @param offset number|nil default 0
+--- @return table[] rows of { staff_name, via, action, detail, target, created_at }
+local rows = exports['xt-admin']:getLogs('ban', 25, 0)
+```
+
+### The log event
+
+Every row is also announced locally on the server. See
+[Logging](/paid-resources/admin/logging#what-a-log-row-looks-like) for the table's shape.
+
+```lua title="your-resource/server.lua"
+AddEventHandler('xt-admin:server:log', function(log)
+    -- Local, not net - nothing about a log belongs on the wire.
+end)
+```
+
+## Client exports
+
+Drive the panel from your own client script.
+
+```lua
+-- Open the admin menu. Silently does nothing for a player with no rank.
+exports['xt-admin']:open()
+
+-- Close it.
+exports['xt-admin']:close()
+
+-- Open the player-facing report surface. Any player.
+exports['xt-admin']:openReports()
+
+--- Dock the menu so the game keeps running behind it.
+--- @param collapsed boolean
+exports['xt-admin']:setCollapsed(true)
+
+--- While docked, or with screen-view windows open: give the mouse to the panel or the game.
+--- @param cursor boolean
+exports['xt-admin']:setCursor(true)
+
+-- The same thing, flipped.
+exports['xt-admin']:toggleCursor()
+```
+
+<Callout type="info">
+`open()` performs the same permission check the `/am` command does. A player with no rank gets
+a notification, not a menu - there is nothing to gate on your side.
+</Callout>
+
+## Database
+
+Seven tables, all created on start. `sql/install.sql` holds the same schema for owners whose
+database user cannot create tables at runtime.
+
+| Table | Holds |
+| --- | --- |
+| `xt_admin_permissions` | Ranks assigned through the in-game editor, keyed by license |
+| `xt_admin_bans` | Every ban, with `ban_id`, license, Discord id, reason, who filed it and when it expires |
+| `xt_admin_logs` | The audit trail. Indexed on `created_at` |
+| `xt_admin_settings` | Server-wide settings, one row per setting (e.g. `density`) |
+| `xt_admin_preferences` | Per-admin preferences, keyed by license |
+| `xt_admin_economy` | The economy map. One row, the whole document as JSON |
+| `xt_admin_economy_revisions` | Rolling history of that document |
+
+<Callout type="info">
+The web portal's tables (`xt_admin_portal_sessions`, `xt_admin_portal_totp`,
+`xt_admin_portal_settings`) ship with **xt-adminportal**, which creates them itself.
+</Callout>
+
+Columns added in a newer version are applied to an existing table on start, so upgrading needs
+no migration.
+
+## Not for third parties
+
+The portal bridge - `portalRequest`, `portalIdentify`, `portalLog`, `portalMayManage`,
+`portalSessionsEnded`, `portalAnnounce` - exists for **xt-adminportal** and nothing else. It
+carries an authenticated identity across a resource boundary, so there is deliberately no
+supported way for another resource to call it.
+
+The same goes for the `xt-admin:server:*` net events the menu registers for its own NUI. They
+re-check permission on every call, so nothing is exposed by them - but they are not an API and
+they change between versions.

@@ -1,0 +1,270 @@
+---
+title: "Permissions"
+description: "Ranks, how staff get one, and the key behind every tab and action."
+---
+
+Everything in the menu is gated on a **key**, and every key names the **minimum rank** allowed
+to use it. Defaults live in `configs/permissions.lua`; changes made in the in-game editor are
+saved to the database and win over the file.
+
+<Callout type="warning">
+The system is **fail-closed**. An unknown key is denied, a required rank that is not in your
+`ranks` list is denied, and an action with no permission at all is denied. A misconfiguration
+locks people out - it never lets them in.
+</Callout>
+
+## Ranks
+
+Ranks are an ordered list, lowest authority first. Higher ranks inherit everything below them.
+
+```lua title="configs/permissions.lua"
+ranks = { 'support', 'mod', 'admin', 'dev' },
+
+rankLabels = {
+    ['support'] = 'Support',
+    ['mod']     = 'Moderator',
+    ['admin']   = 'Administrator',
+    ['dev']     = 'Developer',
+},
+
+-- Who may open the Permissions editor and change other people's ranks.
+permissionToChangeOtherPermissions = 'dev',
+```
+
+Rename them, add a fifth, or cut it to two - the order of the list *is* the hierarchy.
+
+<Callout type="info">
+If you rename a rank, update every place it is named: the `menus` / `personal` / `player`
+blocks below it, `noclipEffects.colorsByPermission` in `configs/client.lua`, and any ACE you
+have already granted.
+</Callout>
+
+## How staff get a rank
+
+Four sources. A player gets the **highest** rank any of them gives them.
+
+<Tabs items={['ACE (server.cfg)', 'In-game editor', 'By license', 'By Discord role']}>
+
+<Tab>
+
+The ace object is the bare rank string.
+
+```bash title="server.cfg"
+add_ace group.admin admin allow
+add_principal identifier.license:abcd1234... group.admin
+```
+
+**In-game only.** ACE needs a connected player, so this grants nothing to the web portal.
+
+</Tab>
+
+<Tab>
+
+**Admin menu → Permissions → assign a rank to a player.** Writes the database, takes effect
+immediately, and works for the portal.
+
+This is the easiest option, and the one to point your staff lead at.
+
+</Tab>
+
+<Tab>
+
+A full `license:` identifier mapped to a rank.
+
+```lua title="configs/permissions.lua"
+permissionsByLicense = {
+    ['license:abcd1234...'] = 'mod',
+},
+```
+
+Works for the portal. Survives a database wipe.
+
+</Tab>
+
+<Tab>
+
+A Discord **role** id - not a user id. Server Settings → Roles → right-click the role → *Copy
+Role ID*.
+
+```lua title="configs/permissions.lua"
+permissionsByDiscordRole = {
+    [123456789012345678] = 'admin',
+},
+
+-- In-game only: wire your own Discord bot / role export in here.
+-- Return nil to disable Discord ranks in game.
+getDiscordRoleID = function(source)
+    return nil
+end,
+```
+
+**In game** this needs `getDiscordRoleID` to return a role id for the player.
+
+**In the web portal** it needs nothing wired up at all - the Discord login already hands back
+every role the member holds. It is the only one of the four that works without a license.
+
+</Tab>
+
+</Tabs>
+
+<Callout type="error">
+**ACE does not work for the web portal.** There is no connected player behind a web request,
+so `add_ace` cannot be read. If you run the portal, grant staff through the in-game editor,
+`permissionsByLicense`, or `permissionsByDiscordRole`. The console warns on start if the
+portal is on and none of these are populated.
+</Callout>
+
+## Editing permissions in game
+
+<Steps>
+
+### Open the Permissions tab
+
+Only ranks at or above `permissionToChangeOtherPermissions` can see it.
+
+### Change what a key requires
+
+Pick any tab or action and set its minimum rank. Saved to the database, live immediately, and
+it overrides `configs/permissions.lua` from then on.
+
+### Or assign a player a rank
+
+Search for a player and set their rank. `None (remove)` takes it away again.
+
+</Steps>
+
+## Key reference
+
+### Menu tabs
+
+The key that decides whether a tab is shown at all.
+
+| Key | Default | Tab |
+| --- | --- | --- |
+| `main` | `support` | Open the admin menu at all |
+| `dashboard` | `support` | Dashboard - keep it at or below `main` |
+| `players` | `mod` | Players |
+| `map` | `mod` | Live player map |
+| `personal` | `mod` | Personal |
+| `items` | `admin` | Items |
+| `weapons` | `admin` | Weapons |
+| `vehicles` | `admin` | Vehicles |
+| `reports` | `mod` | Reports |
+| `logging` | `admin` | Logs |
+| `resources` | `admin` | Resources |
+| `stats` | `admin` | Stats |
+| `bans` | `admin` | Bans |
+| `offline` | `admin` | Offline players |
+| `density` | `admin` | Density |
+| `tools` | `dev` | Dev |
+| `settings` | `support` | Settings |
+
+The Permissions tab has no key of its own - it uses
+`permissionToChangeOtherPermissions`.
+
+### Personal functions
+
+Performed on the admin themselves.
+
+| Key | Default | What it allows |
+| --- | --- | --- |
+| `noclip` | `mod` | Noclip |
+| `godmode` | `admin` | Godmode |
+| `invisible` | `admin` | Invisible |
+| `superJump` | `admin` | Super jump |
+| `speedRun` | `admin` | Speed run |
+| `infiniteAmmo` | `admin` | Infinite ammo |
+| `blips` | `admin` | Player blips on the map |
+| `names` | `admin` | Player names overhead |
+| `teleport` | `admin` | TP to waypoint, coords or a player |
+| `reviveAll` | `admin` | Revive everyone on the server |
+| `reviveNearby` | `admin` | Revive everyone within range |
+| `weather` | `admin` | Open the weather / time panel |
+
+### Player functions
+
+Performed on another player.
+
+| Key | Default | What it allows |
+| --- | --- | --- |
+| `info` | `mod` | See the player-info panel |
+| `needs` | `mod` | See the Needs section |
+| `setNeeds` | `admin` | Change a need |
+| `spectate` | `mod` | Spectate |
+| `screenshot` | `mod` | Silent one-off capture of their screen |
+| `viewScreen` | `admin` | A live window on their screen, in game |
+| `portalViewScreen` | `dev` | The same thing **from a browser** - see below |
+| `freeze` | `admin` | Freeze |
+| `kill` | `admin` | Kill |
+| `revive` | `admin` | Revive |
+| `bring` | `admin` | Teleport them to you |
+| `dropFromSky` | `admin` | Drop from sky |
+| `giveItem` | `admin` | Give an item or weapon |
+| `viewInventory` | `admin` | View their inventory |
+| `wipeInventory` | `admin` | Wipe their inventory |
+| `wipeOfflineInventory` | `dev` | Wipe an offline character's inventory |
+| `clothing` | `admin` | Open a clothing menu on them |
+| `cuff` | `admin` | Cuff |
+| `kick` | `admin` | Kick |
+| `ban` | `admin` | Ban |
+| `setRank` | `dev` | Assign or change their admin rank |
+
+<Callout type="error">
+**`portalViewScreen` is deliberately a separate key from `viewScreen`, and deliberately set to
+`dev`.** The portal is the one surface reachable from the internet, so a stolen session there
+buys live surveillance of your players. Set it above `viewScreen`, or leave it at `dev` so
+nobody has it by accident. It also needs `screens = true` in the portal's own config, and does
+nothing at all without that resource.
+</Callout>
+
+### Trolling
+
+Kept in its own group so a rank can be given the player actions without any of these. All
+default to `admin`, and none of them are silent.
+
+`fire` · `attackingPed` · `mutePlayer` · `fart` · `slowMove` · `reverseControls` ·
+`cloneFollower` · `ghost` · `breakWheel`
+
+### Reports
+
+| Key | Default | What it allows |
+| --- | --- | --- |
+| `chat` | `mod` | Reply inside a report |
+| `close` | `admin` | Close a report |
+| `changeStatus` | `admin` | Change a report's status |
+
+### Dev tools
+
+`menus.tools` opens the tab; these gate what is on it. All default to `dev`.
+
+`showEntities` · `coords` · `laser` · `vehicleInfo` · `deleteEntity`
+
+### Economy map
+
+| Key | Default | What it allows |
+| --- | --- | --- |
+| `economyView` | `admin` | Open the board and read it |
+| `economyManage` | `dev` | Edit and save it |
+
+<Callout type="info">
+The Dev tab is granted by **either** `tools` or `economyView`, so a designer can be given the
+board without any dev tools.
+</Callout>
+
+### Density
+
+| Key | Default | What it allows |
+| --- | --- | --- |
+| `setDensity` | `admin` | Move a slider, flip the kill switch, apply a preset |
+| `resetDensity` | `admin` | Restore the configured defaults |
+
+## Building a rank
+
+A worked example - what a trial moderator can actually do on the defaults:
+
+| Rank | Sees | Can do |
+| --- | --- | --- |
+| `support` | Dashboard, Settings | Read the room. Nothing to anyone |
+| `mod` | …and Players, Map, Personal, Reports | Spectate, screenshot, noclip, work the report queue |
+| `admin` | …and Items, Weapons, Vehicles, Logs, Resources, Stats, Bans, Offline, Density | Kick, ban, revive, give items, restart resources, watch screens |
+| `dev` | …and Dev, Permissions | Entity tools, the economy map, hand out ranks |

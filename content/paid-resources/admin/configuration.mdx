@@ -1,0 +1,477 @@
+---
+title: "Configuration"
+description: "Every config file in xT Admin, key by key."
+---
+
+Everything owner-facing lives in `configs/`. All of it is **outside the escrow** - you can read
+and edit every file.
+
+<Files>
+  <Folder name="configs" defaultOpen>
+    <File name="permissions.lua" />
+    <File name="actions.lua" />
+    <File name="server.lua" />
+    <File name="client.lua" />
+    <File name="shared.lua" />
+    <File name="vehicles.lua" />
+    <File name="density.lua" />
+    <File name="needs.lua" />
+  </Folder>
+  <Folder name="locales">
+    <File name="en.json" />
+  </Folder>
+</Files>
+
+| File | What it holds |
+| --- | --- |
+| `permissions.lua` | Ranks, who may open which tab and run which action, static rank grants → [Permissions](/paid-resources/admin/permissions) |
+| `actions.lua` | The action registry - add, remove or re-gate menu actions → [Custom Actions](/paid-resources/admin/custom-actions) |
+| `server.lua` | Commands, the dashboard, logging, protected resources, framework hooks |
+| `client.lua` | Keybinds, spectate options, trolling behaviour, noclip effects |
+| `shared.lua` | Panel title and accent, report types and statuses |
+| `vehicles.lua` | Spawn whitelist, model blacklist, plate rules, upgrade and fuel hooks |
+| `density.lua` | Ambient population sliders and presets |
+| `needs.lua` | Which needs the player panel shows, and how to read and write them |
+
+<Callout type="warning">
+`configs/client.lua` and `configs/vehicles.lua` are **also evaluated in the server Lua VM** -
+the action registry reads dropdown options out of them. Keep top-level statements
+framework-neutral. A client-only native at the top level of either file throws on the server
+and takes the whole menu down. Inside a function body it is fine.
+</Callout>
+
+---
+
+## shared.lua
+
+The panel's identity.
+
+```lua title="configs/shared.lua"
+-- Rendered uppercase. `brand` is the accent-coloured lead-in, so this reads "xT ADMIN".
+-- For a single-colour title of your own, set brand = false and put the whole name in `admin`.
+title = {
+    brand   = 'xT',
+    admin   = 'Admin',
+    reports = 'Reports',
+},
+
+accent = {
+    default = '#00ffcc',    -- until an admin picks their own in Settings
+    presets = { '#00ffcc', '#4ea8ff', '#a78bfa', '#ff6ec7', '#ff7847', '#ffc94a', '#7ee787', '#e6e6e6' },
+},
+```
+
+`presets` are swatches, not a whitelist - an admin can enter any `#rrggbb`.
+
+### Report types and statuses
+
+```lua title="configs/shared.lua"
+-- What a player can file under. `captureInventory` snapshots what they were
+-- carrying at the moment they filed.
+reportTypes = {
+    { label = 'Player',  captureInventory = true },
+    { label = 'Bug',     captureInventory = true },
+    { label = 'Exploit', captureInventory = true },
+},
+
+-- Add your own. `0` must stay the closed state.
+reportStatuses = {
+    [0] = { label = 'CLOSED',          iconColor = 'red' },
+    [1] = { label = 'New Report',      iconColor = 'white' },
+    [2] = { label = 'Low Priority',    iconColor = 'green' },
+    [3] = { label = 'Medium Priority', iconColor = 'yellow' },
+    [4] = { label = 'High Priority',   iconColor = 'red', iconAnimation = 'beatFade' },
+},
+```
+
+---
+
+## server.lua
+
+### Commands and general
+
+```lua title="configs/server.lua"
+capturePlayerCountInterval = 10,    -- minutes between player-count stat captures
+
+commands = {
+    openMenu  = 'am',        -- open the admin menu (staff)
+    getCoords = 'coords',    -- copy your coordinates (staff)
+    report    = 'report',    -- open the report surface (any player)
+},
+
+-- Identifiers captured for the player-info panel
+playerLicenses = { 'license', 'license2', 'discord' },
+
+maxGiveItemAmount   = 10000,   -- max quantity per "give item"
+reviveNearbyDistance = 10,     -- metres for "revive nearby"
+```
+
+### Dashboard
+
+Every field has a shipped default behind it, so deleting this block costs you tuning, never
+the tab.
+
+```lua title="configs/server.lua"
+dashboard = {
+    -- Which groups the "Groups online" card counts, in display order.
+    -- Leave it empty and the five largest by head count stand in.
+    groups = {},
+
+    churnWindow   = 60,   -- minutes of join/leave history the churn card reads
+    recentActions = 8,    -- log rows on the recent-actions card
+
+    anomalies = {
+        banSpike    = 5,    -- bans inside an hour before it is called a spike
+        reportSpam  = 3,    -- reports from one player inside an hour
+        staleReport = 15,   -- minutes unanswered before a report is called stale
+    },
+},
+```
+
+### Protected resources
+
+Resources kept out of the Resources tab. This is **two** things, not one: the list the tab is
+built from has them removed, *and* the start/stop/restart route refuses them again. The filter
+means an admin is never offered a button that cannot work; the refusal is what actually stops
+it.
+
+```lua title="configs/server.lua"
+protectedResources = {
+    ['xt-admin'] = true,
+    ['ox_lib'] = true,
+    ['oxmysql'] = true,
+    ['qbx_core'] = true,
+    -- ...
+},
+```
+
+Names are exact and case-sensitive - whatever the resource **folder** is called. Out of the
+box the list covers every supported framework, `ox_*`, this menu, FiveM's own infrastructure
+(`monitor`, `sessionmanager`, `spawnmanager`, …), the build system (`yarn`, `webpack`) and
+Cfx's shipped sample resources.
+
+### Logging
+
+See [Logging](/paid-resources/admin/logging) for the full block.
+
+### Framework hooks
+
+Defaults target QBX. Rewrite these for your server.
+
+```lua title="configs/server.lua"
+-- Revive a player (called with the target's server id)
+revivePlayer = function(target)
+    TriggerClientEvent('hospital:client:Revive', target)
+end,
+
+killPlayer = function(source, target)
+    TriggerClientEvent('xt-admin:client:kill', target)
+end,
+
+cuffPlayer = function(source, target)
+    TriggerClientEvent('xt-admin:client:cuff', target)
+end,
+
+giveClothingMenu = function(source, target)
+    TriggerClientEvent('illenium-appearance:client:openClothingShopMenu', target, true)
+end,
+
+openWeatherMenu = function(source)
+    TriggerClientEvent('xt-weather:client:openPanel', source)
+end,
+```
+
+#### clearOfflineInventory
+
+Clears an offline character's inventory from the Offline Players tab.
+
+<Tabs items={['QBX / qb-core', 'ESX', 'ox_core']}>
+<Tab>
+```lua
+clearOfflineInventory = function(cid, license)
+    local affected = MySQL.update.await(
+        'UPDATE players SET inventory = ? WHERE citizenid = ?', { '[]', cid })
+    return (affected or 0) > 0
+end,
+```
+</Tab>
+<Tab>
+```lua
+clearOfflineInventory = function(cid, license)
+    local affected = MySQL.update.await(
+        'UPDATE users SET inventory = ? WHERE identifier = ?', { '[]', cid })
+    return (affected or 0) > 0
+end,
+```
+</Tab>
+<Tab>
+```lua
+clearOfflineInventory = function(cid, license)
+    local affected = MySQL.update.await(
+        'UPDATE characters SET inventory = ? WHERE charId = ?', { '[]', cid })
+    return (affected or 0) > 0
+end,
+```
+</Tab>
+</Tabs>
+
+#### discordToLicense
+
+**Web portal only, and optional.** Given a bare Discord user id, return that person's
+`license:...` identifier, or `nil`.
+
+```lua title="configs/server.lua"
+discordToLicense = function(discord)
+    return MySQL.scalar.await(
+        'SELECT license FROM users WHERE discord = ? LIMIT 1',
+        { 'discord:' .. discord })
+end,
+```
+
+The portal already finds a license for anyone currently connected or previously banned; this
+covers everyone else. Wiring it up means an admin who logs in with Discord also picks up a rank
+granted by the in-game editor or by `permissionsByLicense`.
+
+<Callout type="info">
+The default targets QBX, whose `users` table records every identifier a player connected with.
+qb-core and ESX persist no Discord id out of the box - there, return `nil` (which simply
+disables the lookup) and grant portal staff by Discord **role** instead, which needs no license
+at all.
+</Callout>
+
+---
+
+## client.lua
+
+### Keybinds
+
+All blank on purpose - see [Installation & Usage](/paid-resources/admin/installation-and-usage#keybinds).
+
+```lua title="configs/client.lua"
+keybinds = {
+    openMenu     = '',   -- '' registers the bind, unbound, for the player to set
+    noclip       = '',   -- a key here ships a default
+    reports      = '',   -- false drops the bind entirely
+    cursor       = '',
+    laserCopy    = '',
+    laserDelete  = '',
+    spectateExit = '',
+},
+```
+
+### Item icons and spectate
+
+```lua title="configs/client.lua"
+-- Defaults to whatever ox_inventory uses. '' turns icons off.
+itemImagePath = GetConvar('inventory:imagepath', 'nui://ox_inventory/web/images'),
+
+spectate = {
+    muteSelf     = true,   -- do not transmit voice while spectating
+    showControls = true,   -- the on-screen "watching X, press Y to stop" readout
+},
+```
+
+### Trolling
+
+```lua title="configs/client.lua"
+attackingPeds = {
+    models  = { ['a_c_chimp'] = 'Chimp', ['a_c_mtlion'] = 'Mountain Lion' },
+    weapons = { 'WEAPON_KNIFE', 'WEAPON_PISTOL' },
+},
+
+troll = {
+    mute = {
+        notify = true,   -- a silent mute reads as a broken mic and generates a ticket
+        apply = function(muted)                      -- runs on the muted player's client
+            NetworkSetTalkerProximity(muted and 0.0 or 8.0)
+        end,
+    },
+
+    fart = {
+        sound = { bank = 'audiodirectory/xt_admin', set = 'xt_admin', name = 'fart' },
+    },
+
+    slowMove        = { rate = 0.35, blockSprint = true },
+    reverseControls = { onFoot = true, inVehicle = true },
+    cloneFollower   = { invincible = true },
+    ghost           = { models = { --[[ model = label ]] }, duration = 20000 },
+},
+```
+
+Adding models to `attackingPeds.models` or `troll.ghost.models` adds them to the dropdown in
+the menu automatically - the action registry builds its options from this file.
+
+### Noclip effects
+
+A coloured smoke puff left behind by an admin in noclip, keyed by their rank.
+
+```lua title="configs/client.lua"
+noclipEffects = {
+    enable   = true,
+    duration = 300,
+    colorsByPermission = {
+        ['default'] = { r = 100, g = 100, b = 100 },
+        ['dev']     = { r = 155, g = 0,   b = 0   },
+        ['admin']   = { r = 255, g = 255, b = 0   },
+        ['mod']     = { r = 100, g = 100, b = 255 },
+        ['support'] = { r = 255, g = 150, b = 200 },
+    },
+},
+```
+
+---
+
+## needs.lua
+
+The Needs section of the player-info panel. `get` and `set` are the only two functions that
+know what a "need" is on your server - return hunger and thirst, or five other things, and the
+panel renders whatever it is handed.
+
+```lua title="configs/needs.lua"
+enabled         = true,   -- off means the section never appears and `get` is never called
+refreshInterval = 2000,   -- ms between re-reads while the panel is open. 0 = read once
+
+-- Labels and ranges only. `get` decides which needs actually exist.
+-- A need `get` returns that is not listed here still shows, using `defaults`.
+types = {
+    { key = 'hunger', label = 'Hunger', icon = 'utensils', min = 0, max = 100, step = 1, unit = '%' },
+    { key = 'thirst', label = 'Thirst', icon = 'droplet',  min = 0, max = 100, step = 1, unit = '%' },
+    { key = 'stress', label = 'Stress', icon = 'brain',    min = 0, max = 100, step = 1, unit = '%' },
+
+    -- readOnly shows the bar without the slider:
+    -- { key = 'armor', label = 'Armor', icon = 'shield', readOnly = true },
+},
+```
+
+<Tabs items={['QBX', 'ESX']}>
+<Tab>
+```lua title="configs/needs.lua"
+get = function(target)
+    local player = exports.qbx_core:GetPlayer(target)
+    if not player then return nil end
+
+    local meta = player.PlayerData.metadata
+    return { hunger = meta.hunger, thirst = meta.thirst, stress = meta.stress }
+end,
+
+set = function(target, key, value)
+    local player = exports.qbx_core:GetPlayer(target)
+    if not player then return false end
+
+    player.Functions.SetMetaData(key, value)
+    return true
+end,
+```
+</Tab>
+<Tab>
+```lua title="configs/needs.lua"
+get = function(target)
+    local xPlayer = exports.es_extended:getSharedObject().GetPlayerFromId(target)
+    if not xPlayer then return nil end
+
+    local status = {}
+    TriggerEvent('esx_status:getStatus', target, 'hunger', function(s) status.hunger = s.getPercent() end)
+    TriggerEvent('esx_status:getStatus', target, 'thirst', function(s) status.thirst = s.getPercent() end)
+    return status
+end,
+
+set = function(target, key, value)
+    TriggerClientEvent('esx_status:set', target, key, value * 10000)  -- esx_status stores 0–1,000,000
+    return true
+end,
+```
+</Tab>
+</Tabs>
+
+Return `nil` from `get` for a player whose needs cannot be read yet (mid-join, say) and the
+panel shows *"no needs reported"* rather than a row of zeroes. Return `false` from `set` and
+the panel reverts that slider.
+
+---
+
+## vehicles.lua
+
+```lua title="configs/vehicles.lua"
+-- Classes admins may spawn, by GTA class id
+allowedVehicleSpawnClasses = { [0] = true, [1] = true, --[[ ... ]] [22] = true },
+
+-- Models that can never be spawned, whatever their class
+blacklistedSpawnModels = { [`HYDRA`] = true, [`OPPRESSOR2`] = true, --[[ ... ]] },
+
+-- What "Set Plate" will accept. Enforced server-side: widening the pattern
+-- widens what the server allows. It is a gate, not a hint for the input box.
+plate = {
+    maxLength = 8,             -- GTA's own hard limit; raising it silently truncates
+    pattern   = '^[%w ]+$',    -- Lua pattern: letters, digits and spaces
+    uppercase = true,
+},
+
+-- What "Max Performance" fits. Armour and bulletproof tyres are left out on
+-- purpose: this makes a car fast, not survivable.
+performanceUpgrades = {
+    modTypes = {
+        { type = 11, label = 'Engine' },
+        { type = 12, label = 'Brakes' },
+        { type = 13, label = 'Transmission' },
+        { type = 15, label = 'Suspension' },
+    },
+    turbo = true,
+    onUpgraded = function(vehicle) end,   -- for anything your framework needs to save
+},
+
+-- Swap for your fuel resource
+setVehicleFuel = function(vehicle)
+    SetVehicleFuelLevel(vehicle, 100)
+end,
+
+-- Runs after a vehicle is repaired
+fixVehicle = function(vehicle)
+    Entity(vehicle).state.fuel = 100
+end,
+```
+
+---
+
+## density.lua
+
+```lua title="configs/density.lua"
+-- The sliders the Density tab offers. Renaming a label is safe; a new `key`
+-- needs a matching native in the client module or the slider moves nothing.
+types = {
+    { key = 'vehicle',    label = 'Traffic',         icon = 'car',     description = 'Moving vehicles on the road' },
+    { key = 'parked',     label = 'Parked Vehicles', icon = 'square',  description = 'Cars parked along the streets' },
+    { key = 'multiplier', label = 'Random Vehicles', icon = 'refresh', description = 'Ambient vehicles spawned around the player' },
+    { key = 'peds',       label = 'Pedestrians',     icon = 'users',   description = 'People walking the streets' },
+    { key = 'scenario',   label = 'Scenario Peds',   icon = 'user',    description = 'Peds performing scripted world activities' },
+},
+
+-- Applied on a fresh install, and what "Reset" restores
+defaults = { vehicle = 0.8, parked = 0.8, multiplier = 0.8, peds = 0.8, scenario = 0.8 },
+
+min = 0.0, max = 1.0, step = 0.1,   -- 1.0 is vanilla GTA; it cannot be asked for more
+
+-- One-click profiles. A preset may name only the sliders it cares about.
+presets = {
+    { id = 'vanilla', label = 'Vanilla', description = 'Stock GTA population',
+      values = { vehicle = 1.0, parked = 1.0, multiplier = 1.0, peds = 1.0, scenario = 1.0 } },
+    -- ...
+},
+```
+
+Density is server-wide, replicated to every connected client, and persisted - it survives a
+restart.
+
+---
+
+## Locales
+
+`locales/en.json` is outside the escrow. Copy it to `locales/<code>.json`, translate it, and
+set your locale convar:
+
+```bash title="server.cfg"
+setr ox:locale de
+```
+
+Around 310 keys, including a label for every logged action. Adding a `logs.action.<yourAction>`
+key is all it takes to give a [custom action](/paid-resources/admin/custom-actions) a
+translated row in the log.

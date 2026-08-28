@@ -1,0 +1,130 @@
+---
+title: "Installation & Usage"
+description: "Install xT Admin, open it, and get your staff in."
+---
+
+## Installation
+
+<Steps>
+
+### Drop the resource in
+
+Put `xt-admin` in your resources folder. **Do not rename it** - the folder must stay
+`xt-admin` or the resource stops itself on start and tells you why in the console.
+
+### Start it after its dependencies
+
+```bash title="server.cfg"
+ensure oxmysql
+ensure ox_lib
+ensure ox_inventory
+ensure Renewed-Lib
+
+ensure xt-admin
+```
+
+OneSync must be on.
+
+### Let it build its tables
+
+The seven tables it needs are created on first start. Nothing to run.
+
+If your database user cannot create tables at runtime, import `sql/install.sql` by hand
+instead - it is the same schema.
+
+### Give yourself a rank
+
+Nobody has access until you do this. The quickest way, in `server.cfg`:
+
+```bash title="server.cfg"
+add_ace group.admin admin allow
+add_principal identifier.license:abcd1234... group.admin
+```
+
+There are three other ways, including two that work for staff who are not connected. See
+[Permissions](/paid-resources/admin/permissions).
+
+### Point the configs at your framework
+
+Defaults target QBX. If you run something else, the framework hooks in `configs/server.lua`
+and `configs/needs.lua` are the ones to check first - see
+[Configuration](/paid-resources/admin/configuration).
+
+</Steps>
+
+<Callout type="info">
+On start the console prints a banner with the docs and support links. If it instead prints a
+rename or author warning and stops, the folder name or the manifest has been changed.
+</Callout>
+
+## Opening the menu
+
+```
+/am
+```
+
+That is the only thing bound out of the box, and it is gated on the `main` permission.
+
+## Commands
+
+| Command | Who | What it does |
+| --- | --- | --- |
+| `/am` | Staff | Opens the admin menu |
+| `/report` | Any player | Opens the report surface |
+| `/coords` | Staff | Copies your own coordinates as a `vec3` |
+| `/coords <id>` | Staff with `map` | Copies **another player's** coordinates. Logged |
+
+All three command names are configurable in `configs/server.lua`.
+
+## Keybinds
+
+**Nothing is bound to a key out of the box.** That is deliberate: a shipped default collides
+with whatever the player already uses.
+
+Every bind still registers, so each one appears - unbound - under
+**Settings → Key Bindings → FiveM**, for each player to set to whatever they want.
+
+| Bind | What it does |
+| --- | --- |
+| Open Admin Menu | Same as `/am` |
+| Open Reports | The report surface, for any player |
+| Toggle Noclip | Straight to noclip without opening the menu |
+| Docked menu / screen views: toggle mouse | Swaps the mouse between the panel and the camera |
+| Entity Laser: copy | Copies the entity you are pointing at |
+| Entity Laser: delete | Deletes the entity you are pointing at |
+| Stop spectating | Exits a spectate without going back through the panel |
+
+To ship a default instead, fill the key in:
+
+```lua title="configs/client.lua"
+keybinds = {
+    openMenu = 'F6',
+    noclip   = '',       -- registers, unbound, for the player to set
+    reports  = false,    -- never registers, never appears in their settings list
+},
+```
+
+## Usage notes
+
+**Docked mode.** The panel can be docked so the game keeps running behind it. In that state
+the cursor keybind is what swaps your mouse between the panel and the camera.
+
+**Spectating.** You hear what they hear - world audio and proximity voice. Your own voice is
+muted while you watch, unless you turn that off in `configs/client.lua`. Run the action again,
+or press the exit keybind, to stop.
+
+**Screen views.** Up to six windows at once per admin, each on a different player. They stay
+open when the panel closes; the cursor keybind is how you reach them again. Frames are never
+written to disk or to the database.
+
+**Everything is server-authoritative.** The client asks; the server checks the rank, checks the
+target, validates every input against the action's own schema, runs it, and logs it. A modified
+client gets nothing it was not already allowed to have.
+
+## Upgrading
+
+Drop the new folder in and restart. Any column added since your version is applied on start -
+no migration to run and nothing to import.
+
+Your `configs/` are yours: compare them against the new ones for keys that were added, and
+merge in what you want.

@@ -1,0 +1,241 @@
+---
+title: "Custom Actions"
+description: "Add your own buttons to the admin menu from configs/actions.lua."
+---
+
+The menu is built from a registry, and the registry is a config file. Add an entry to
+`configs/actions.lua` and it appears in the menu - permission-gated, input-validated and
+logged - with no other code changes.
+
+<Callout type="info">
+`configs/actions.lua` is outside the escrow, and so is the handler you write inside it. You do
+not need to edit anything encrypted to add an action.
+</Callout>
+
+## A first action
+
+<Steps>
+
+### Add a permission key
+
+```lua title="configs/permissions.lua"
+player = {
+    -- ...
+    sendToJail = 'admin',
+},
+```
+
+### Add the action
+
+```lua title="configs/actions.lua"
+actions = {
+    -- ...
+    {
+        id         = 'sendToJail',
+        category   = 'player',
+        label      = 'Send to Jail',
+        icon       = 'lock',
+        permission = 'sendToJail',
+        target     = true,
+        order      = 145,
+        confirm    = 'Send this player to jail?',
+        inputs = {
+            { name = 'minutes', type = 'number', label = 'Minutes', required = true, min = 1, max = 240 },
+        },
+        handler = function(ctx)
+            TriggerClientEvent('my-jail:client:send', ctx.target, ctx.input.minutes)
+            return { ok = true }
+        end,
+    },
+}
+```
+
+### Restart
+
+The button is now on the Players tab for `admin` and above, asks for a confirmation, refuses a
+value outside 1–240, and files a log row naming the staff member, the target and the minutes.
+
+</Steps>
+
+<Callout type="info">
+Give it a translated log label by adding `logs.action.sendToJail` to `locales/en.json`. Without
+one it logs under the `label` you wrote above, which is usually fine.
+</Callout>
+
+## Action fields
+
+| Field | Type | What it does |
+| --- | --- | --- |
+| `id` | string | **Required.** Unique. This is what the client dispatches and what the log row is keyed on |
+| `category` | string | **Required.** Which panel it appears on - see below |
+| `label` | string | The button text |
+| `icon` | string | A [Lucide](https://lucide.dev/icons/) icon name |
+| `description` | string | A line of help under the button |
+| `permission` | string | **Required.** The key from `configs/permissions.lua` that gates it |
+| `target` | boolean | Needs a selected player. The server re-checks that they are online before the handler runs |
+| `order` | number | Sort order within its category. Defaults to `999` |
+| `confirm` | string | Shows this text as a confirmation prompt first |
+| `inputs` | table | A form to fill in before it runs - see [Inputs](#inputs) |
+| `handler` | function | What it actually does. Receives `ctx` |
+| `toggle` | boolean | Renders as an on/off switch |
+| `state` | string | The state bag key a toggle flips - see [Toggles](#toggles) |
+| `remote` | boolean | Also runnable from the web portal. **Off by default** - see [Remote actions](#remote-actions) |
+| `log` | boolean | `false` skips the automatic log row. Only for actions that log themselves |
+| `logLabel` | string | Overrides `label` in the log |
+
+### Categories
+
+| Category | Where it appears |
+| --- | --- |
+| `personal` | Personal tab - acts on the admin themselves |
+| `player` | Players tab - acts on the selected player |
+| `trolling` | The trolling group on the Players tab |
+| `tools` | Dev tab |
+| `items` | Dispatched by the Items tab rather than drawn as a button |
+| `vehicles` | Dispatched by the Vehicles tab rather than drawn as a button |
+
+## Inputs
+
+Every input is validated **on the server** before your handler is called. A payload that fails
+never reaches it, and the rejection is logged.
+
+```lua
+inputs = {
+    { name = 'reason',   type = 'textarea', label = 'Reason', required = true, max = 512 },
+    { name = 'duration', type = 'select',   label = 'Duration', required = true,
+      options = { { value = '1h', label = '1 Hour' }, { value = '1d', label = '1 Day' } } },
+}
+```
+
+| Type | Renders as | Validated as |
+| --- | --- | --- |
+| `input` | A single-line text box | A string, at most `max` characters |
+| `textarea` | A multi-line box | A string, at most `max` characters |
+| `number` | A number box | A number between `min` and `max` |
+| `select` | A dropdown | Must match one of `options` exactly |
+| `checkbox` | A checkbox | - |
+| `player` | A player picker | Must be a numeric server id |
+
+Shared properties: `name` (the key in `ctx.input`), `label`, `required`, `description`.
+
+<Callout type="warning">
+`required` is not enforced for `checkbox` - an unticked box is a legitimate answer.
+</Callout>
+
+## The handler
+
+```lua
+handler = function(ctx)
+    -- ctx.source       the admin's server id. nil for a portal request
+    -- ctx.actor        { kind = 'game' | 'portal', ... }
+    -- ctx.target       the selected player's server id, when `target = true`
+    -- ctx.targetName   their name, captured BEFORE the handler ran
+    -- ctx.input        the validated form values, keyed by input `name`
+    -- ctx.def          the action definition itself
+
+    if somethingWentWrong then
+        return { ok = false, error = 'they were already in jail' }
+    end
+
+    return { ok = true }
+end
+```
+
+Returning nothing counts as success. Returning `{ ok = false, error = ... }` files a **failure**
+row instead of a success row, and the admin is told.
+
+<Callout type="info">
+`ctx.targetName` is captured before your handler runs, because a ban or a kick has already
+dropped the player by the time it returns - without it the two most important rows in the audit
+trail would name nobody.
+</Callout>
+
+## Toggles
+
+A toggle with a `state` key and no `handler` is flipped for you: the server writes
+`true` / `false` to that key on the admin's own player state bag, replicated.
+
+```lua
+{ id = 'myToggle', category = 'personal', label = 'My Toggle', icon = 'zap',
+  permission = 'myToggle', toggle = true, state = 'admin_myToggle', order = 200 },
+```
+
+Your own client script reacts to it:
+
+```lua title="your-resource/client.lua"
+AddStateBagChangeHandler('admin_myToggle', ('player:%s'):format(cache.serverId), function(_, _, value)
+    -- value is a boolean
+end)
+```
+
+The menu reads the current value out of the bag when it opens, so the switch always shows the
+truth rather than a guess.
+
+<Callout type="warning">
+This works because the admin is both the owner of the bag and the beneficiary. **Never use a
+state bag to apply an effect to someone else** - a player owns their own bag, so whatever they
+write in it replicates to the server as truth. Effects on a target travel as net events, which
+no client can forge.
+</Callout>
+
+## Remote actions
+
+`remote = true` also makes an action runnable from the [web portal](/paid-resources/admin-portal).
+It is **opt-in per action and off by default**, so anything you add stays in-game only until
+you say otherwise.
+
+<Callout type="error">
+**The rule: the handler must need nothing from the admin's own character.** There is no ped, no
+vehicle and no coordinates behind an HTTP request, so any handler that reads `ctx.source` will
+break. Teleport, bring, spectate, revive, view inventory and every personal toggle are in that
+group and are deliberately unflagged.
+
+Handlers that act purely on the *target*, the database, or server state are safe to flag.
+</Callout>
+
+The remote gate is checked **before** the permission gate, so a rank misconfiguration can never
+widen the remote surface.
+
+## Tabs
+
+The same file owns the tab bar.
+
+```lua title="configs/actions.lua"
+tabs = {
+    -- The menu opens on tabs[1], and so does the portal.
+    { id = 'dashboard', label = 'Dashboard', icon = 'layout-dashboard', kind = 'dashboard', permission = 'dashboard' },
+    { id = 'players',   label = 'Players',   icon = 'users',            kind = 'players',   permission = 'players' },
+    -- ...
+    { id = 'tools',     label = 'Dev',       icon = 'code',             kind = 'tools',     permission = 'tools',
+      anyOf = { 'tools', 'economyView' } },
+}
+```
+
+| Field | What it does |
+| --- | --- |
+| `id` | Unique id for the tab |
+| `label` | The text in the sidebar |
+| `icon` | A [Lucide](https://lucide.dev/icons/) icon name |
+| `kind` | **Which panel the menu renders.** Not free-form - it must be one of the built-in panels |
+| `permission` | The key that gates the tab |
+| `anyOf` | Grant the tab if the rank holds **any** of these keys |
+
+<Callout type="warning">
+`kind` selects a panel the NUI already knows how to draw. You can reorder tabs, rename them,
+re-gate them and delete the ones you do not want - but a new `kind` has nothing behind it. New
+*actions* are the supported way to extend the menu.
+</Callout>
+
+## What you get for free
+
+Every action that goes through the registry is:
+
+1. **Refused if it is not remote-safe** and the request came from a browser.
+2. **Refused if the rank is too low** - and the attempt is logged.
+3. **Refused if `target = true` and the target is not online** - and the attempt is logged.
+4. **Refused if any input fails validation** - and the attempt is logged.
+5. **Run**, then logged as a success or a failure with the staff member, the target and every
+   input value the admin filled in.
+
+There is nothing to remember to add. An action declared with no handler files a *failure* row
+so you find out in game rather than in a console nobody reads.

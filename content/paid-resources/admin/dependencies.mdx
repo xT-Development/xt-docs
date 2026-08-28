@@ -1,0 +1,62 @@
+---
+title: "Dependencies"
+description: "What xT Admin needs, and what it can optionally use."
+---
+
+## Required
+
+| Dependency | Notes |
+| --- | --- |
+| [oxmysql](https://github.com/overextended/oxmysql/releases) | Logs, bans, ranks and settings are all persisted |
+| [ox_lib](https://github.com/overextended/ox_lib/releases) | Callbacks, keybinds, commands, locales |
+| [ox_inventory](https://github.com/overextended/ox_inventory/releases) | Item and weapon giving, inventory viewing and wiping |
+| [Renewed-Lib](https://github.com/Renewed-Scripts/Renewed-Lib) | The framework bridge - this is what makes the menu multi-framework |
+| **OneSync** | Must be enabled |
+
+<Callout type="info">
+**Renewed-Lib is how one menu supports five frameworks.** It resolves character names, ids
+and offline money for QB, QBX, OX, ND and ESX behind a single API. Anything it does not cover
+sits behind a function in `configs/server.lua` that you can rewrite for your server.
+</Callout>
+
+Start them **before** `xt-admin`:
+
+```bash title="server.cfg"
+ensure oxmysql
+ensure ox_lib
+ensure ox_inventory
+ensure Renewed-Lib
+
+ensure xt-admin
+```
+
+## Optional
+
+None of these are required. Each one adds a feature, and the menu hides or refuses that
+feature cleanly when the resource is not running.
+
+| Dependency | What it unlocks |
+| --- | --- |
+| [screencapture](https://github.com/itschip/screencapture) | **View Screen** and **Screenshot**. Without it, those two buttons are refused and the console says so at start-up |
+| [illenium-appearance](https://github.com/iLLeniumStudios/illenium-appearance) | The **Clothing Menu** action. Any clothing resource works - it is one function in `configs/server.lua` |
+| [xt-weather](/paid-resources/weather) | The **Weather / Time** panel from the Personal tab. Also one function you can repoint |
+| **xt-adminportal** | The same menu from a browser. Included in the bundle - see [Admin Portal](/paid-resources/admin-portal) |
+
+### Screen viewing quality
+
+`screencapture` offers two transports, and xt-admin picks per session based on whether you
+have configured the second:
+
+| Mode | Setup | What you get |
+| --- | --- | --- |
+| **Snapshot** (default) | Nothing | A polled image roughly every 0.65s. Silent to the player |
+| **Live** | Deploy screencapture's Cloudflare Worker and set the `screencapture_live_endpoint` convar | Real 30fps video - but the player is shown a `SCREEN LIVE` overlay that the upstream resource does not let us suppress |
+
+## Framework support
+
+Defaults target **QBX**. Every framework-specific call in the resource sits behind a function
+in a config file you can edit - reviving, killing, cuffing, clothing, needs, fuel, offline
+inventory, and the Discord-to-license lookup used by the portal.
+
+See [Configuration](/paid-resources/admin/configuration) for the full list and the ESX / ox_core
+snippets that ship commented out beside each one.

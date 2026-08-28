@@ -1,0 +1,13 @@
+{
+  "pagesIndex": "index",
+  "pages": [
+    "features",
+    "dependencies",
+    "installation-and-usage",
+    "permissions",
+    "configuration",
+    "custom-actions",
+    "logging",
+    "exports-and-events"
+  ]
+}

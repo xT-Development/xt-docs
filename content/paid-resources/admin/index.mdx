@@ -1,0 +1,52 @@
+---
+title: "Admin"
+description: "A multi-framework admin menu for FiveM, with a fail-closed permission system and a persistent audit trail."
+---
+
+<Frameworks items={["QB/QBX","ESX","OX","ND"]} />
+
+{/* TODO: add the store link and preview video when they are live.
+    **Purchase:** [https://store.xthrasherrr.dev/resources/XXXXXXX](https://store.xthrasherrr.dev/resources/XXXXXXX)
+    <YouTube id="XXXXXXXXXXX" /> */}
+
+Everything your staff need in one panel: moderate players, read the logs, work the report
+queue, hand out ranks, watch the map, and restart a resource - without leaving the game.
+
+Every action is gated by rank before it runs and written to a searchable log that survives a
+restart. Nothing the menu offers is decided by the client.
+
+![The Players tab of the xT Admin menu](/img/admin/players.webp)
+
+<Cards>
+  <Card title="Features" href="/paid-resources/admin/features" />
+  <Card title="Dependencies" href="/paid-resources/admin/dependencies" />
+  <Card title="Installation & Usage" href="/paid-resources/admin/installation-and-usage" />
+  <Card title="Permissions" href="/paid-resources/admin/permissions" />
+  <Card title="Configuration" href="/paid-resources/admin/configuration" />
+  <Card title="Custom Actions" href="/paid-resources/admin/custom-actions" />
+  <Card title="Logging" href="/paid-resources/admin/logging" />
+  <Card title="Exports & Events" href="/paid-resources/admin/exports-and-events" />
+</Cards>
+
+## New here? Read these three
+
+<Cards num={3}>
+  <Card title="1. Install it" href="/paid-resources/admin/installation-and-usage" />
+  <Card title="2. Give your staff a rank" href="/paid-resources/admin/permissions" />
+  <Card title="3. Point the config at your framework" href="/paid-resources/admin/configuration" />
+</Cards>
+
+## The web portal
+
+The same menu, in a browser - same permissions, same actions, same audit trail. It is a
+**separate resource, included in the same bundle**, and it does nothing on its own: it
+authenticates a browser and hands the request to this resource, which decides everything else.
+
+<Callout type="info">
+You do not need the portal to use the admin menu, and nothing on this page depends on it.
+Everything portal-related in the configs sits inert until that resource is installed.
+</Callout>
+
+<Cards>
+  <Card title="Admin Portal" href="/paid-resources/admin-portal" />
+</Cards>
