@@ -3,6 +3,8 @@
   "root": true,
   "pagesIndex": "index",
   "pages": [
+    "admin",
+    "admin-portal",
     "blackmarkets",
     "crafting",
     "cryptomining",
