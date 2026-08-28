@@ -1,0 +1,66 @@
+---
+title: "Admin Portal"
+description: "The xT Admin menu in a browser - same permissions, same actions, same audit trail."
+---
+
+<Frameworks items={["QB/QBX","ESX","OX","ND"]} />
+
+{/* TODO: add the store link and preview video when they are live.
+    **Purchase:** [https://store.xthrasherrr.dev/resources/XXXXXXX](https://store.xthrasherrr.dev/resources/XXXXXXX)
+    <YouTube id="XXXXXXXXXXX" /> */}
+
+Your staff moderate the server from a browser - phone, laptop, anywhere - with the same
+permissions, the same actions and the same audit trail as the in-game menu.
+
+A staff member opens your portal hostname, signs in with Discord, enters a code from their
+authenticator app, and gets the panel. Every button on it maps to an action
+[xt-admin](/paid-resources/admin) already knows how to run - so a rank that cannot ban in game
+cannot ban from the portal, and every row in the log says which surface it came from.
+
+![The Dashboard of the xT Admin web portal](/img/admin-portal/dashboard.webp)
+
+<Callout type="error">
+**This resource is an add-on to [xT Admin](/paid-resources/admin), and it is useless without
+it.** Both ship in the same bundle. All it does is prove *who* a browser belongs to and carry
+the request; xt-admin decides everything else.
+</Callout>
+
+<Cards>
+  <Card title="Features" href="/paid-resources/admin-portal/features" />
+  <Card title="Dependencies" href="/paid-resources/admin-portal/dependencies" />
+  <Card title="Installation & Usage" href="/paid-resources/admin-portal/installation-and-usage" />
+  <Card title="Security" href="/paid-resources/admin-portal/security" />
+  <Card title="Troubleshooting" href="/paid-resources/admin-portal/troubleshooting" />
+</Cards>
+
+## Before you deploy it
+
+Three things to know, so nothing is a surprise:
+
+<Callout type="warning">
+**1. You need a domain and a Cloudflare account.** Discord will only redirect to `https://`,
+and FXServer has no TLS of its own - it serves the portal in plaintext on your game port, which
+is already open to the internet on every live server. A free Cloudflare Tunnel gives you the
+hostname and the certificate. Budget about 20 minutes for the deployment.
+</Callout>
+
+<Callout type="warning">
+**2. ACE permissions do not work for the portal.** `add_ace` grants a rank to a *connected
+player*, and there is no connected player behind a web request. Grant portal staff a rank by
+Discord role with `permissionsByDiscordRole` - easiest to manage in groups, and the only source
+that needs no license - or per-person with the in-game Permissions editor or
+`permissionsByLicense`. All three live in xt-admin, and the console warns you at start if none
+of them are set.
+</Callout>
+
+<Callout type="warning">
+**3. Two-factor is on by default, and should stay on.** Without it a stolen Discord account is
+enough to reach bans, logs and every player on your server.
+</Callout>
+
+## How ranks stay honest
+
+Nothing about permissions lives in this resource. It proves which Discord account a browser
+belongs to; the rank behind that identity is resolved by xt-admin **on every single request**.
+
+An admin demoted in game loses the portal on their next click, not at the end of their session.

@@ -1,0 +1,142 @@
+---
+title: "Troubleshooting"
+description: "The things that go wrong when setting up the xT Admin web portal, and what fixes them."
+---
+
+The portal fails **shut**, so most problems look like a 404 or a refusal rather than an error
+page. Read the server console first - it tells you which of the five values is missing and
+prints the exact URLs it built.
+
+## The URL 404s
+
+| Check | Fix |
+| --- | --- |
+| Is `enabled = true` in `configs/portal.lua`? | The master switch. Nothing is reachable while it is false |
+| Did the console print `Web portal ready at ...`? | If not, a convar is missing - the same line says which |
+| Is `xt-admin` running? | The portal refuses to serve anything until xt-admin answers |
+| Does your `xt_admin_portal_base` match the tunnel's path? | With Cloudflare Tunnel it must be `"/xt-adminportal"` |
+| Is the tunnel actually running? | **Networking** → **Tunnels** should show it `Healthy`. A `config.yml` setup also needs `cloudflared service install`, or it dies with your shell |
+
+## `Web portal is enabled but not configured - still missing: ...`
+
+That convar did not take. Two causes, in order of likelihood:
+
+1. **The `set` lines are below your `ensure` lines.** Convars are read when the resource
+   starts. Move them above.
+2. **A typo in the convar name.** They are `xt_admin_portal_host`, `xt_admin_portal_base`,
+   `xt_admin_discord_id`, `xt_admin_discord_secret`, `xt_admin_discord_guild`.
+
+## Discord says the redirect URI is invalid
+
+The URI has to match **character for character**, trailing slash and all.
+
+Copy the second line the console printed - do not retype it:
+
+```
+Web portal: set the Discord redirect URI to https://admin.yourdomain.com/xt-adminportal/auth/callback
+```
+
+Paste it into your application → **OAuth2** → **Redirects** → **Save**.
+
+## I log in with Discord and I am told I have no access
+
+<Callout type="error">
+**This is almost always ACE.** `add_ace group.admin admin allow` grants a rank to a *connected
+player*, and there is no connected player behind a web request - so the portal cannot read it.
+</Callout>
+
+Grant a rank one of these three ways instead, all in **xt-admin**:
+
+| How | Where |
+| --- | --- |
+| **`permissionsByDiscordRole`** - *recommended* | `xt-admin/configs/permissions.lua` - map a role once, manage the people in Discord, and it works with **no license at all** |
+| In-game Permissions editor | Admin menu → Permissions. Per-person, writes the database |
+| `permissionsByLicense` | `xt-admin/configs/permissions.lua`. Per-person |
+
+The other two key on a license, so your Discord account has to be matched back to one. If you
+are not connected, have never been banned, and your framework is not QBX or qb-core, that match
+will not happen until you adjust the
+[`discordToLicense`](/paid-resources/admin/configuration#discordtolicense) hook - or grant by
+Discord **role**, which needs no license.
+
+<Callout type="info">
+xt-admin prints a warning at start if the portal is on and none of the three are populated.
+</Callout>
+
+## Nobody can even reach the login page
+
+Check `requiredGuildRoles` in `configs/portal.lua`. If it is populated, a member without one of
+those roles is turned away before rank resolution runs. An empty table means any guild member
+may try.
+
+Also check that the person is actually **in the guild** whose id you set as
+`xt_admin_discord_guild`.
+
+## The authenticator code is always rejected
+
+| Cause | Fix |
+| --- | --- |
+| **Clock drift** on the phone or the server | Raise `totp.window` from `1` to `2` - that is the maximum |
+| A code that was already used | Wait for the next 30-second step. A used code is never accepted twice |
+| Five wrong codes in a row | That Discord account is locked out for fifteen minutes |
+
+## Someone lost their phone
+
+In game: **Settings** → **Web Portal** → the **2FA** button next to their name. It clears their
+enrolment and signs them out, so they re-enrol on their next login.
+
+## Staff are being signed out constantly
+
+- `session.idleMinutes` is 60 by default and resets on any request.
+- `session.absoluteHours` is 12, and is a hard ceiling however active they are.
+- `session.bindUserAgent = true` ties a session to the browser it was created in. A browser
+  that changes its user agent - some privacy extensions do this - will end the session.
+
+Sessions are **not** tied to IP, so a phone changing networks is not the cause.
+
+## An admin got demoted and can still see the panel
+
+They cannot *do* anything with it. The rank is resolved on every request, so their next click
+is refused. The page they are already looking at is just a page.
+
+If you want them gone right now: **Settings** → **Web Portal** → **Revoke**.
+
+## Rate limited during normal use
+
+Raise the relevant bucket in `configs/portal.lua`:
+
+| Bucket | Default | What it covers |
+| --- | --- | --- |
+| `apiPerMinute` | 120 | Normal portal traffic |
+| `authPerMinute` | 10 | Login and code entry. **Leave this low** |
+| `tilePerMinute` | 600 | Map tiles. Only paid the first time an area is viewed |
+| `screenPerMinute` | 240 | Screen-view polling |
+
+<Callout type="warning">
+If everyone on your network shares one public IP and several staff use the portal at once, they
+share a bucket. Raise `apiPerMinute` rather than turning limiting off.
+</Callout>
+
+## Screen viewing does nothing
+
+All three have to be true:
+
+1. `screens = true` in `configs/portal.lua`.
+2. The staff member holds `portalViewScreen` in xt-admin - a **different key** from
+   `viewScreen`, shipping at `dev`.
+3. The `screencapture` resource is installed and started. The console warns at start if it is
+   not.
+
+## The map loads slowly the first time
+
+Map tiles are fetched per area and cached by the browser, so the first pan over a region is the
+only one that costs anything. If it is consistently slow, `tilePerMinute` may be throttling -
+one pan loads many tiles at once.
+
+## Still stuck
+
+Read the server console with the portal restarting; every refusal it makes says why.
+
+Then bring that console output to [Discord](https://discord.xthrasherrr.dev) - with your
+`configs/portal.lua` if you like, but **never** your `server.cfg` block: it contains your client
+secret.

@@ -1,0 +1,73 @@
+---
+title: "Dependencies"
+description: "What the xT Admin web portal needs before you install it."
+---
+
+## Resources
+
+| Dependency |
+| --- |
+| [**xt-admin**](/paid-resources/admin) |
+| [ox_lib](https://github.com/overextended/ox_lib/releases) |
+| [oxmysql](https://github.com/overextended/oxmysql/releases) |
+
+<Callout type="error">
+The portal is a front door. It authenticates a browser and hands the request to xt-admin, which
+owns every permission decision and every action. **Without xt-admin there is nothing behind the
+door** - the resource errors on start and 404s every request.
+</Callout>
+
+Order matters in `server.cfg`:
+
+```bash title="server.cfg"
+ensure xt-admin          # the menu - owns every permission decision the portal makes
+ensure xt-adminportal    # the portal - must come after it
+```
+
+## Outside the server
+
+| | Why |
+| --- | --- |
+| **A domain you own** | Discord will only redirect to `https://` |
+| **A free Cloudflare account** | For the tunnel that terminates TLS and maps a hostname onto the FiveM HTTP endpoint |
+| **A Discord server you can administrate** | To create the application and read your guild id |
+
+<Callout type="error">
+**Your game port is already public, and the portal is served on it.** 30120 is forwarded on
+every live server - it has to be, or nobody can join - and FiveM serves every resource's HTTP
+handler on it, alongside `/players.json` and `/info.json`. The tunnel does not close that; it
+adds a hostname and TLS, and its path rule keeps everything except the portal off your
+domain. What makes `http://<your-ip>:30120/xt-adminportal/` a 404 is the portal's own hostname
+check, so **`xt_admin_portal_host` must be a hostname, never a bare IP**.
+</Callout>
+
+Only the Discord server is needed to try it on your own machine first - see
+[Testing without a domain](/paid-resources/admin-portal/installation-and-usage#testing-without-a-domain).
+
+## Nothing else
+
+There is **no database work and no key to generate.** The three tables and the session signing
+key are created on first start.
+
+`sql/install.sql` is there only for owners whose database user cannot create tables at runtime.
+
+| Table | Holds |
+| --- | --- |
+| `xt_admin_portal_sessions` | Live sessions, keyed by a **hash** of the token - never the token |
+| `xt_admin_portal_totp` | Second-factor enrolment, keyed by Discord id |
+| `xt_admin_portal_settings` | The generated session signing key |
+
+## Exports
+
+**None.** This resource consumes xt-admin's portal bridge and exposes nothing of its own -
+there is no supported way for a third resource to reach the portal's session store, and that
+is deliberate.
+
+It registers three `lib.callback`s, all for xt-admin's in-game Settings panel and all gated by
+xt-admin on the same bar as handing out ranks:
+
+| Callback | Purpose |
+| --- | --- |
+| `xt-adminportal:server:getSessions` | Portal status and the live session list |
+| `xt-adminportal:server:revokeSession` | End one session, or all of them |
+| `xt-adminportal:server:resetTotp` | Clear an enrolment when someone loses their authenticator |

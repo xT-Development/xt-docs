@@ -1,0 +1,10 @@
+{
+  "pagesIndex": "index",
+  "pages": [
+    "features",
+    "dependencies",
+    "installation-and-usage",
+    "security",
+    "troubleshooting"
+  ]
+}

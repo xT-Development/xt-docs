@@ -1,0 +1,99 @@
+---
+title: "Security"
+description: "The checklist to re-check before you hand the portal URL to your staff."
+---
+
+The portal is the one surface of xT Admin reachable from the internet. Everything below is
+already the default except where noted - this is the list to re-check **before you hand the URL
+to your staff**.
+
+## Checklist
+
+- [ ] Secrets are in `server.cfg`, not `configs/portal.lua`, and set with **`set` not `setr`**.
+- [ ] The tunnel's path rule is in place, so only `/xt-adminportal` is public -
+      `https://admin.yourdomain.com/players.json` must 404.
+- [ ] **`xt_admin_portal_host` is a hostname, never a bare IP.** Your game port is forwarded -
+      it has to be, or nobody can join - and FiveM serves this resource on it, so
+      `http://<your-ip>:30120/xt-adminportal/` is a URL that exists. It answers 404 only
+      because the portal compares the `Host` header against that convar, and the tunnel is the
+      only thing that sends the real hostname. Put an IP in there and you have deleted the
+      check, and handed the login page to anyone scanning the port, over plain http.
+- [ ] `totp.required = true`. Turning it off means a stolen Discord account is enough to reach
+      bans, logs and every player on the server.
+- [ ] `screens = false` unless you have deliberately decided otherwise, and
+      `portalViewScreen` is left at `dev`.
+- [ ] `trustProxyHeader = true` is correct because you are behind the tunnel - and the game
+      port being open does not undo it.
+- [ ] Optional but cheap: `requiredGuildRoles = { 'roleid' }` so strangers who find the login
+      page are turned away before rank resolution runs.
+- [ ] You know where the kill switch is: in game, **Settings** → **Web Portal** → **Revoke
+      all**.
+
+## What protects what
+
+| Layer | What it stops |
+| --- | --- |
+| **Hostname check, before anything else** | Anyone reaching the game port directly, by IP or an unconfigured hostname |
+| **Discord OAuth** | Anyone who is not in your guild |
+| **`requiredGuildRoles`** | Guild members who are not staff, before rank resolution runs |
+| **Rank resolution, on every request** | A demoted admin, on their next click |
+| **TOTP** | Someone holding a stolen Discord account |
+| **Session binding** | A stolen cookie moved to another device |
+| **Idle + absolute timeouts** | A session left open on a shared machine |
+| **`remote = true` per action** | An action reaching the browser that was never meant to |
+| **Rate limits, per IP, per bucket** | Guessing a 6-digit code, and general abuse |
+| **Origin check on every write** | Cross-site requests |
+| **Strict CSP, no CORS** | A hostile page reading the portal |
+
+## Screen viewing
+
+<Callout type="error">
+This is the single most sensitive thing the portal can be given, and it takes **three separate
+decisions** to enable:
+
+1. `screens = true` in `configs/portal.lua` - while false, the routes do not exist at all.
+2. The `portalViewScreen` permission in xt-admin, which is **a different key from
+   `viewScreen`** and ships at `dev`.
+3. The `screencapture` resource installed and running.
+
+Set `portalViewScreen` above `viewScreen`, or leave it at `dev` so nobody has it by accident.
+</Callout>
+
+Frames are never stored - nothing reaches the database or the disk. Revoking a session ends any
+live view with it.
+
+## Known limitations
+
+Stated plainly, because you should know them before you deploy.
+
+**ACE permissions do not work for the portal.** There is no connected player behind a web
+request. Grant portal staff by Discord role with `permissionsByDiscordRole` - easiest to manage
+in groups - or per-person through the in-game editor or `permissionsByLicense`. See
+[Step 6](/paid-resources/admin-portal/installation-and-usage#step-6--give-your-staff-a-rank).
+
+**Database access is a TOTP bypass.** A TOTP secret has to be stored in a form it can be
+verified against; there is no hash-and-compare equivalent. This is true of essentially every
+TOTP implementation without dedicated key hardware. Anyone with read access to your database
+can generate valid codes - so treat database access as equivalent to full portal access.
+
+**A Discord-role rank survives losing the role until the session expires.** Roles are read at
+sign-in, so `session.absoluteHours` is the worst case. Revoke the session from the in-game
+Settings tab to end it immediately.
+
+**The portal's map is a place to watch from, not to travel from.** Teleporting needs an admin
+ped in the world.
+
+**Screen frames are polled, not streamed.** FiveM's HTTP response buffers until it is sent, so
+there is no SSE and no chunked transfer. At the capture cadence the difference is invisible,
+and polling is what survives a tunnel's idle timeout.
+
+## If you think a session is compromised
+
+<Callout type="warning">
+In game: **Settings** → **Web Portal** → **Revoke all**. Every session dies immediately,
+including any live screen view. Then reset the affected person's 2FA with the **2FA** button
+next to their name, so they re-enrol on a device you trust.
+
+If you think the Discord secret leaked, reset it in the Discord developer portal and update
+`xt_admin_discord_secret` in `server.cfg`.
+</Callout>
