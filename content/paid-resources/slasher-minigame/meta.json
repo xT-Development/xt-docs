@@ -3,6 +3,9 @@
   "pages": [
     "features",
     "dependencies",
-    "installation-and-usage"
+    "installation-and-usage",
+    "map-builder",
+    "configuration",
+    "exports"
   ]
 }

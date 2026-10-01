@@ -1,0 +1,103 @@
+---
+title: "Map Builder"
+description: "Build, edit and manage maps and event peds in-game with /slasherbuilder."
+---
+
+Every map and every event ped is created in-game, on a live server. A saved map is in the
+create-lobby list for every player at once; a saved ped appears, moves or disappears for every
+player at once. No restart, no file editing.
+
+```
+/slasherbuilder
+```
+
+Anyone with the `admin` ACE can open it - on most servers, your admins already. It is checked on the
+**server** on every action, not just when the builder opens. To use another ACE, change `builderAce`
+in [`configs/server.lua`](/paid-resources/slasher-minigame/configuration#serverlua).
+
+The builder cannot be opened while you are in a lobby.
+
+## Controls
+
+You fly a freecam and build in the world.
+
+| Control | Does |
+| --- | --- |
+| `W` `A` `S` `D` + mouse | Fly |
+| `Space` / `Ctrl` | Up / down |
+| `Shift` | Boost |
+| Mouse wheel | Fly speed |
+| **Left click** | Place a boundary point (Maps tab) or the ped (Peds tab) |
+| **Right click** | Place a spawn point, facing the way the camera faces |
+| Hold `F` + mouse wheel | Change the zone's height (Maps tab) |
+| `Z` / `Y` | Undo / redo |
+| `Left Alt` | Toggle the cursor, to use the panel |
+| `Backspace` | Exit |
+
+`Esc` or `Left Alt` releases the cursor and puts you back in the camera. Undo, redo, the height key,
+the cursor toggle and exit can be rebound under **Settings → Key Bindings → FiveM**.
+
+## Maps
+
+The **Maps** tab has numbered lists of the boundary points and spawn points, each with **fly to**
+and **remove**, the zone's **height**, and the map list.
+
+### Setting the height
+
+The height is set while you place points, the same way as an ox_lib poly zone.
+
+* The **first point** sets the zone's level from the ground you place it on. Every point after it
+  stays on that level, wherever you aim, so the boundary is always flat.
+* The red line at your aim shows the zone's full height, **centred on the point** you are about to
+  place. Read it against the real ground and roof.
+* Hold `F` and scroll to make the zone taller or shorter. Each notch is 0.5m; hold `Shift` as well
+  for 2.5m. While `F` is held, the top and bottom edges turn white and the height is shown at your
+  aim.
+* One press-and-scroll is one undo step. Remove every point and the next one sets a new level.
+
+A new map starts 20m tall.
+
+A map needs **at least 3 boundary points** and **at least 2 spawn points**. Save it and it is
+immediately selectable in the create-lobby list.
+
+From the map list you can **edit**, **clone**, **enable / disable** or **delete** any map:
+
+* **Disable** hides a map from the create-lobby list without deleting it. A lobby already waiting
+  on it cannot start until it is re-enabled or the host picks another map.
+* **Delete** is refused while a lobby is using the map. Close the lobby first.
+
+Leaving a map's boundary during a game starts a countdown, and the player is eliminated if they do
+not return in time (`timeToReturnToMapBeforeDeath` in `configs/client.lua`).
+
+### The boundary is a prism, not a mesh
+
+`ox_lib` flattens every point of a poly zone onto a **single height**, and the zone's thickness is
+the **full height of the volume, centred on that height**. So the starting Slaughter House (points
+at `z = 31`, thickness `20`) covers **z 21 to z 41** - not a 20m wall standing on the ground at 31.
+
+The builder draws exactly that volume while you build, so what you see is what the game uses.
+
+## Event peds
+
+The **Peds** tab places the NPCs players walk up to to open the lobby browser. Aim and **left
+click**, or press **Place at camera**, to place one facing you, then set its:
+
+* model
+* scenario (or none, to stand idle)
+* heading
+* map blip - on or off, label, sprite, colour and scale
+
+## Several admins at once
+
+Any number of admins can use the builder at the same time. Whoever loads a map or ped first holds it
+until they load something else or leave. Everyone else sees who is editing it and cannot change it
+in the meantime.
+
+## Limits
+
+The builder is bounded by `mapLimits` and `pedLimits` in `configs/shared.lua` - how many maps and
+peds can exist, how many points and spawns a map may have, its height and how far from the world
+origin it may sit.
+
+These are checked on the server before anything is saved, so a modified client cannot save a
+50,000-point map. See [Configuration](/paid-resources/slasher-minigame/configuration#sharedlua).

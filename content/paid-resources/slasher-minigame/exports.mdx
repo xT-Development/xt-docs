@@ -1,0 +1,53 @@
+---
+title: "Exports"
+description: "Check whether a player is in a Slasher game from another resource."
+---
+
+Use these to keep other resources - death and EMS, inventory, HUD, anticheat - from acting on a
+player who is in a Slasher game. A player in a game is in their own routing bucket, at night, and
+may be invisible, frozen or armed with a weapon they do not own.
+
+## Client
+
+### isPlayerInSlasherLobby
+
+```lua
+--- @return boolean
+local inSlasher = exports['xt-slasher']:isPlayerInSlasherLobby()
+```
+
+## Server
+
+### getPlayerSlasherLobby
+
+```lua
+--- @param source number
+--- @return number? lobbyId nil when the player is not in a lobby
+local lobbyId = exports['xt-slasher']:getPlayerSlasherLobby(source)
+```
+
+### isPlayerInSlasherLobby
+
+```lua
+--- @param source number
+--- @return boolean
+local inSlasher = exports['xt-slasher']:isPlayerInSlasherLobby(source)
+```
+
+All three are `true` (or return an id) from the moment a player joins a lobby, not only while a game
+is running.
+
+## Example
+
+Keep a death screen from opening when a player is eliminated in a Slasher game:
+
+```lua
+AddEventHandler('gameEventTriggered', function(name, args)
+    if name ~= 'CEventNetworkEntityDamage' then return end
+    if args[1] ~= cache.ped or not IsEntityDead(cache.ped) then return end
+
+    if exports['xt-slasher']:isPlayerInSlasherLobby() then return end
+
+    openDeathScreen()
+end)
+```

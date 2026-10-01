@@ -1,13 +1,123 @@
 ---
 title: "Installation & Usage"
+description: "Install the Slasher Minigame and get your first game going."
 ---
 
-There is little to no configuration with this resource. Ensure you have the following done:
+## Installation
 
 <Steps>
 
-### Enable OneSync Infinity
+### Drop the resource in
 
-### Set up your open functions within the configs
+Put `xt-slasher` in your resources folder. **Do not rename it** - the folder must stay
+`xt-slasher` or the resource stops itself on start and tells you why in the console.
+
+### Let it build its tables
+
+The two tables it needs are created on first start, with the starting map (Slaughter House) and its
+event ped. Nothing to run.
+
+If your database user cannot create tables at runtime, the console says so - import
+`sql/install.sql` by hand instead. It is the same schema, and safe to run again.
+
+### Start it after its dependencies
+
+```bash title="server.cfg"
+ensure oxmysql
+ensure ox_lib
+ensure ox_target
+
+ensure xt-slasher
+```
+
+OneSync must be on. See [Dependencies](/paid-resources/slasher-minigame/dependencies).
+
+### Check the configs
+
+Your framework is detected automatically. Defaults target qbx_medical and illenium-appearance - on
+anything else, check the bridge functions in `configs/client.lua` first. They revive the player and
+restore their clothes after a game. See
+[Configuration](/paid-resources/slasher-minigame/configuration).
+
+</Steps>
+
+<Callout type="info">
+On start the console prints a banner with the docs and support links. If it instead prints a
+rename or author warning and stops, the folder name or the manifest has been changed.
+</Callout>
+
+## Playing
+
+1. Walk up to the event ped - by default at the Slaughter House, marked **Slasher Event** on the
+   map - and target it to open the lobby browser.
+2. Create a lobby, or join one. Password-locked lobbies ask for the password; **Join Random** skips
+   them.
+3. The host starts the game once enough players have joined (`minPlayersToStart`, 2 by default).
+
+Everyone in the lobby is moved into the map in their own routing bucket. When the game ends they
+are returned to where they were standing, in their own clothes, and stay in the lobby for another
+round.
+
+## Commands
+
+| Command | Who | What it does |
+| --- | --- | --- |
+| `/slasherbuilder` | Admins | Opens the [Map Builder](/paid-resources/slasher-minigame/map-builder). Run it again to close it |
+| `/leaveslasher` | Any player | Leaves the current game or lobby, after a confirm |
+
+Hold `TAB` in a game for the full scoreboard. The key is `scoreboardKey` in `configs/client.lua`.
+
+## Keybinds
+
+**`/leaveslasher` is not bound to a key out of the box**, so it cannot collide with a key players
+already use. It still appears - unbound - under **Settings → Key Bindings → FiveM** for each player
+to set.
+
+The builder's cursor, undo, redo and exit keys are listed there too, and can be rebound the same
+way.
+
+<Callout type="info">
+If the lobby browser ever stops responding to the mouse, `/slasherbuilder` in the F8 console closes
+it - for any player, admin or not.
+</Callout>
+
+## Usage notes
+
+**Lobbies live in memory.** A server restart ends every game and returns everyone to the default
+routing bucket. Maps and event peds are in the database, so restarts and updates never touch them.
+
+**One game per player.** A player in a Slasher game is in a routing bucket and cannot be seen or
+interacted with by anyone outside it. Use the [exports](/paid-resources/slasher-minigame/exports)
+to keep death, inventory or HUD resources from acting on them.
+
+**Editing a map mid-game is safe.** A game already running is unaffected - it plays against a
+snapshot taken when it started.
+
+## Upgrading from v1
+
+Version 2 moves maps and event peds out of the config files and into the database.
+
+<Steps>
+
+### Replace the folder
+
+Drop the new `xt-slasher` in over the old one. Your old `configs/` will not work as-is - start from
+the new ones and copy your values across. The weapons, rounds and hiding settings moved from
+`configs/client.lua` to `configs/shared.lua`, and `deafultBucket` is now spelled `defaultBucket`.
+
+### Start it
+
+The new tables are created on first start. **oxmysql is now required, and Renewed-Lib no longer
+is.**
+
+### Rebuild your custom maps
+
+`configs/maps.lua` is gone, and its maps are **not** imported. Slaughter House is added for you; rebuild
+any other map with `/slasherbuilder`. The old `points`, `spawns` and `thickness` values are a
+useful reference while you place them.
+
+### Place your event peds
+
+`startingPeds` in `configs/client.lua` is gone too. Place your peds in the builder's **Peds** tab.
 
 </Steps>

@@ -1,28 +1,62 @@
 ---
 title: "Features"
+description: "What the Slasher Minigame does, from the lobby browser to the last survivor."
 ---
 
-### General Features
+## The game
 
-* Native GTA:O Slasher games sounds for heartbeats, win, loss, round start, and round end
-* Lobby browser, allows players to create their own lobbies, customize them, or join and leave existing lobbies
-* Random weapon selection for slashers
-* Surviving players receive a random weapon in the last X seconds of the round, giving them the chance to kill the slasher(s)
-* Spectating cam when dead. Follows the surviving slashers, allowing players to switch between slashers to spectate
-* Ability to create new maps/locations for players to choose from
-* Open functions to blackout and change the time of day when the round starts
-* Set outfits for slashers
+* **Hide, then hunt.** Slashers start masked, frozen and invisible, with their screen blacked out,
+  while survivors scatter. When the hiding time is up, their screen clears and the hunt begins.
+* **Heartbeat.** A survivor hears their own heartbeat when a slasher is close. The distance is
+  measured on the server, so a modified client cannot use it to find the slashers.
+* **The last survivor fights back.** Shortly before a round ends, the last survivor standing is
+  armed with the lobby's weapon.
+* **Rounds and score.** Slashers win a round by eliminating every survivor. Survivors win by
+  eliminating every slasher, or by lasting until the timer runs out. Roles are re-picked each round,
+  and the game goes to whoever wins the most rounds - or a draw.
+* **Ghosts and spectating.** An eliminated player's ghost stays on the map where they fell, and
+  they spectate the surviving slashers until the round ends.
+* **Blackout.** Every round is played at midnight with the city lights off, and the weather and
+  clock are handed back when the game ends.
+* **Out of bounds.** Leaving the map starts a countdown. Players who do not return in time are
+  eliminated.
+* **Native GTA Online sounds** for the heartbeat, round start and end, win and loss.
+* **Slasher outfits**, set separately for male and female peds.
 
-### Special Features
+## Lobbies
 
-* When players are killed, a ghost of their ped is created at the location they were killed at until the round ends
-* When slashers get close to surviving players, an audible heartbeat sound is heard from the player
+* **A full lobby browser** - create, edit, delete, join, leave and join a random lobby, with a live
+  player list. No context menus.
+* **Password-locked lobbies.** Passwords are checked on the server and never sent to a client.
+* **Lobby settings** the host picks: name, password, map, weapon, max players, max slashers,
+  rounds, round length and hiding time. Every setting is bounded by limits you set in the config.
+* **Routing buckets.** Each game runs in its own bucket, so players in a game cannot be seen or
+  touched by anyone outside it.
 
-### Lobby Customization
+## In-game HUD
 
-* Choose map
-* Set max players
-* Set max amount of slashers
-* Set max rounds
-* Set the round lengths (in minutes)
-* Set the allowed time to hide (in seconds)
+* Round, countdown, survivors alive, score and the current phase. Passive - it never takes your
+  mouse.
+* **Scoreboard** - hold `TAB` for the full board. A living slasher's identity is hidden from
+  living survivors; dead players and slashers see everything.
+
+## Map builder
+
+* **Build maps in the world** with a freecam: click to place the boundary and the spawn points,
+  hold a key and scroll to set the zone's height as you go, undo and redo.
+* **Edit, clone, enable, disable or delete** any map. A disabled map disappears from the
+  create-lobby list without being deleted.
+* **Place event peds** - the NPCs players walk up to - with their model, scenario, heading and map
+  blip.
+* **Live.** A saved map or ped appears for every player at once.
+* **Several admins at once.** Each map and ped is locked to whoever is editing it.
+
+See [Map Builder](/paid-resources/slasher-minigame/map-builder).
+
+## Server-authoritative
+
+* The slasher list is never sent to living survivors.
+* Deaths are verified against the server's own view of the player's health.
+* Every lobby setting and every map is checked against your configured limits on the server, so a
+  modified client cannot start a 999-round game or save a 50,000-point map.
+* The builder's permission is checked on the server on every action, not just when the menu opens.

@@ -1,0 +1,211 @@
+---
+title: "Configuration"
+description: "Every config file in the Slasher Minigame, key by key."
+---
+
+Everything owner-facing lives in `configs/`. All of it is **outside the escrow** - you can read and
+edit every file.
+
+<Files>
+  <Folder name="configs" defaultOpen>
+    <File name="shared.lua" />
+    <File name="client.lua" />
+    <File name="server.lua" />
+  </Folder>
+  <Folder name="locales">
+    <File name="en.json" />
+  </Folder>
+  <Folder name="sql">
+    <File name="install.sql" />
+  </Folder>
+  <Folder name="bridge">
+    <Folder name="custom">
+      <File name="server.lua" />
+      <File name="client.lua" />
+    </Folder>
+  </Folder>
+</Files>
+
+| File | What it holds |
+| --- | --- |
+| `shared.lua` | Debug, the weapon list, the minimum players, and the limits every lobby and map is bounded by |
+| `client.lua` | Slasher outfit, scoreboard key, out-of-bounds grace period, and the client bridge functions |
+| `server.lua` | Default routing bucket, lobby cap, heartbeat tuning, and who may use the builder |
+
+Maps and event peds are **not** in `configs/` - they are built in-game. See
+[Map Builder](/paid-resources/slasher-minigame/map-builder).
+
+---
+
+## shared.lua
+
+```lua title="configs/shared.lua"
+debug = false,                              -- Debug prints in the server/client console
+
+-- Weapons offered when creating a lobby. Given to slashers, and to the last survivor
+-- when a round is nearly over. `name` is the weapon model, `label` is what players see.
+weapons = {
+    { name = 'WEAPON_BATTLEAXE', label = 'Battle Axe' },
+    { name = 'WEAPON_HAMMER',    label = 'Hammer' },
+    { name = 'WEAPON_KNIFE',     label = 'Knife' },
+    { name = 'WEAPON_MACHETE',   label = 'Machete' },
+},
+
+minPlayersToStart = 2,                      -- A lobby cannot start below this
+```
+
+### Lobby limits
+
+The range of every setting a host can pick when creating a lobby.
+
+```lua title="configs/shared.lua"
+limits = {
+    maxPlayers        = { min = 2, max = 10 },
+    maxSlashers       = { min = 1, max = 3 },
+    rounds            = { min = 1, max = 5 },
+    roundsLength      = { min = 2, max = 10 },  -- minutes
+    timeToHide        = { min = 3, max = 60 },  -- seconds
+    nameMaxLength     = 32,
+    passwordMaxLength = 32,
+},
+```
+
+### Builder limits
+
+```lua title="configs/shared.lua"
+mapLimits = {
+    maxMaps        = 25,                        -- Cap on maps in total (0 = no new maps can be built)
+    labelMaxLength = 32,                        -- Max characters for a map label and a ped's blip label (64 at most)
+    points         = { min = 3, max = 64 },     -- A polygon needs 3 points to enclose anything
+    spawns         = { min = 2, max = 32 },     -- Spawn points a map must have (min) and may have (max)
+    height         = { min = 2, max = 200 },    -- Metres from the zone's floor to its ceiling
+    worldXY        = 10000.0,                   -- Max |x| / |y|; GTA V's map fits inside ~8000
+    worldZ         = { min = -500.0, max = 2500.0 },
+},
+
+pedLimits = {
+    maxPeds = 10,                               -- Cap on starting peds in total (0 = no new peds can be placed)
+},
+```
+
+<Callout type="warning">
+**`limits`, `mapLimits` and `pedLimits` are security boundaries, not just preferences.** The server
+rejects anything outside them, so a modified client cannot start a 999-round game, create a lobby
+with more slashers than players, or save a 50,000-point map. Raise them deliberately.
+</Callout>
+
+---
+
+## client.lua
+
+```lua title="configs/client.lua"
+scoreboardKey = 'TAB',                      -- Hold this to show the full scoreboard in-game
+
+timeToReturnToMapBeforeDeath = 10,          -- Seconds a player may stay outside the map before they are killed
+```
+
+### Slasher outfit
+
+Applied to slashers for the length of a game, with a separate set for male and female peds. Each
+entry is a component id with its drawable (`item`) and `texture` - see
+[SetPedComponentVariation](https://docs.fivem.net/natives/?_0x262B14F48D29DE80).
+
+```lua title="configs/client.lua"
+slasherOutfit = {
+    male = {
+        [1]  = { item = 183, texture = 0 }, -- mask
+        [11] = { item = 72,  texture = 2 }, -- jacket
+        -- ...
+    },
+    female = {
+        -- ...
+    },
+},
+```
+
+### Client bridge functions
+
+Nothing else in the resource talks to another resource directly. Rewrite these for your server.
+
+| Function | Called | Default |
+| --- | --- | --- |
+| `resetClothing()` | When a game ends | Reloads the player's skin through illenium-appearance |
+| `revivePlayer()` | On spawn into a round and when the game ends | Fires `qbx_medical:client:playerRevived` |
+| `setWeaponWheel(state)` | Game start and end | Toggles ox_inventory's weapon wheel, so the slasher can use their weapon. Skipped if ox_inventory is not running |
+| `setBlackoutOnClient()` | Round start | Midnight, lights off, and claims the sky from the weather resource |
+| `resyncLightsAndTimeState()` | Game end | Restores the lights and clock and hands the sky back |
+
+For ESX, for example, `revivePlayer` becomes:
+
+```lua title="configs/client.lua"
+revivePlayer = function()
+    TriggerEvent('esx_ambulancejob:revive')
+end,
+```
+
+The weather functions already work with **xt-weather**, **Renewed-Weathersync** and
+**randol_weather**. They claim the sky by setting the player's `syncWeather` statebag to `false`
+locally - not replicated, which keeps them working on servers with `sv_stateBagStrictMode` on.
+
+---
+
+## server.lua
+
+```lua title="configs/server.lua"
+defaultBucket = 0,                          -- Bucket players are returned to when a game ends
+
+maxLobbies = 10,                            -- Hard cap on concurrent lobbies (anti-spam)
+
+timeBeforeEndToArmLastPlayer = 60,          -- Seconds before a round ends that the last survivor is armed
+
+heartbeat = {
+    enabled  = true,
+    distance = 7.0,                         -- Metres at which a survivor hears their heartbeat
+    interval = 500,                         -- Milliseconds between proximity checks, per active lobby
+},
+```
+
+The heartbeat is measured on the server and pushed to the survivor. The slasher list is never sent
+to survivors, so a modified client cannot read it.
+
+### Who may use the builder
+
+```lua title="configs/server.lua"
+builderAce = 'admin',                       -- ACE that may open /slasherbuilder and edit maps and event peds
+```
+
+Re-checked on the server on every builder action. `admin` is the ACE your admins already have on
+most servers, so there is nothing to add to `server.cfg`.
+
+<Callout type="info">
+`configs/server.lua` is never sent to players, so it is the safe place for anything private. The
+other two files are downloaded by every client.
+</Callout>
+
+---
+
+## Framework
+
+There is no framework config. The bridge bundled in `bridge/` detects **QBX, QBCore, ESX, ox_core
+and ND_Core** on start and reads character ids and names from whichever is running.
+
+To force one - for example when two are installed - set:
+
+```bash title="server.cfg"
+setr xt_framework qbx    # qbx | qb | esx | ox | nd | custom
+```
+
+On a framework it does not support, set `custom` and fill in the functions in
+`bridge/custom/server.lua` and `bridge/custom/client.lua`. Leave the rest of `bridge/` as it is -
+it is replaced whole on every update.
+
+---
+
+## Locales
+
+Every string players see is in `locales/en.json`. Copy it to your language's code - `de.json`,
+`fr.json` - translate it, and set ox_lib's locale:
+
+```bash title="server.cfg"
+setr ox:locale de
+```

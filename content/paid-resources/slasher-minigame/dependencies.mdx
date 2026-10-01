@@ -1,10 +1,40 @@
 ---
 title: "Dependencies"
+description: "What the Slasher Minigame needs, and what it can optionally use."
 ---
 
-| Dependency | Required |
+## Required
+
+| Dependency | Notes |
 | --- | --- |
-| [ox_lib](https://github.com/overextended/ox_lib/releases) | Required |
-| [ox_target](https://github.com/overextended/ox_target/releases) | Required |
-| [ox_inventory](https://github.com/overextended/ox_inventory/releases) | Required |
-| [Renewed-Lib](https://github.com/Renewed-Scripts/Renewed-Lib) | Required |
+| [ox_lib](https://github.com/overextended/ox_lib/releases) | Callbacks, zones, keybinds, locales, notifications |
+| [oxmysql](https://github.com/overextended/oxmysql/releases) | Stores the maps and event peds |
+| [ox_target](https://github.com/overextended/ox_target/releases) | How players interact with the event peds. [sleepless_interact](https://github.com/Sleepless-Development/sleepless_interact) works in its place |
+| **OneSync** | Must be enabled - each game runs in its own routing bucket |
+
+Start them **before** `xt-slasher`:
+
+```bash title="server.cfg"
+ensure oxmysql
+ensure ox_lib
+ensure ox_target
+
+ensure xt-slasher
+```
+
+## Optional
+
+| Dependency | What it does |
+| --- | --- |
+| [ox_inventory](https://github.com/overextended/ox_inventory/releases) | Its weapon wheel is turned on for the length of a game, so the slasher can use their weapon. Skipped when it is not running |
+| [xt-weather](/paid-resources/weather) | Hands the sky over for the blackout and takes it back afterwards. Renewed-Weathersync and randol_weather work too |
+| [illenium-appearance](https://github.com/iLLeniumStudios/illenium-appearance) | Restores the player's own outfit after a game. Any clothing resource works - it is one function in `configs/client.lua` |
+
+## Framework support
+
+**QBX, QBCore, ESX, ox_core and ND_Core are detected automatically** by the bridge bundled in
+`bridge/` - there is nothing to configure. Everything else that touches another resource - reviving,
+restoring clothing, the weapon wheel and the weather - is a function in `configs/client.lua` you can
+rewrite for your server.
+
+See [Configuration](/paid-resources/slasher-minigame/configuration).
